@@ -1,0 +1,13 @@
+Package: fedregs
+Type: Package
+Title: A Porthole Into the US Code of Federal Regulations
+Version: 0.1.0
+Author: Scott Large
+Maintainer: Scott Large <scott.large@noaa.gov>
+Description: The Code of Federal Regulations (CFR) annual edition is the codification of the general
+and permanent rules published in the Federal Register by the departments and agencies of the Federal
+Government of the United States of America. Simply, the fedregs package facilitates word processing and 
+sentiment analysis of the CFR using tidy principles.
+License: GPL 3.0
+Encoding: UTF-8
+LazyData: true
