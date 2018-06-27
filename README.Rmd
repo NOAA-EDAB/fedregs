@@ -1,0 +1,103 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, echo = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "README-"
+)
+```
+
+# fedregs
+
+The goal of fedregs is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go). 
+
+## Installation
+
+You can install fedregs from github with:
+
+```{r gh-installation, eval = FALSE}
+# install.packages("devtools")
+devtools::install_github("slarge/fedregs")
+```
+
+## Example
+
+The Code of federal regulations is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Right now, I'm mostly interested in a specific part and maybe the associated subparts for a given year. The `cfr_text()` function does a few things. First, each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so the function gathers all the URLs for a given title/year combination. These URLs are parsed to document the chapters, parts, and subparts associated with the volume and the target URLs are further parsed to provide a data frame of the text for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext]() format.     
+
+```{r get_regs, echo = TRUE}
+library(fedregs)
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(quanteda)
+
+regs <- cfr_text(year = 2017,
+                 title_number = 50,
+                 chapter = 6,
+                 part = 648,
+                 return_tidytext = TRUE,
+                 verbose = TRUE)
+head(regs)
+```
+Now, we can unnest the tibble and take a peek at the data to see what we have to poke at.
+```{r peek_data, echo = TRUE}
+regs %>%
+  unnest() %>% head(20) %>% pull(word)
+```
+
+Not entirely unexpected, but there are quite a few common words that don't mean anything. These "stop words"" typically don't have important significance and and are filtered out from search queries.
+
+```{r stop_words, echo = TRUE}
+head(stopwords("english"))
+```
+
+There are some other messes like punctuation, numbers, *i*ths, Roman Numerals, web sites, and random letters (probably from indexed lists) that can be removed with some regex-ing. We can also convert the raw words to word stems to further aggregate our data.
+
+```{r cleaning_words, echo = TRUE, warnings = FALSE}
+stop_words <- data_frame(word = stopwords("english"))
+
+clean_words <- regs %>%
+  unnest() %>% 
+  mutate(word = gsub("[[:punct:]]", "", word), # remove any remaining punctuation
+                word = gsub("^[[:digit:]]*", "", word)) %>%  # remove digits (e.g., 1st, 1881a, 15th, etc)
+  anti_join(stop_words, by = "word") %>%  # remove "stop words"
+  filter(is.na(as.numeric(word)),
+                !grepl("^m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$",
+                      word),
+                !grepl("\\b[a-z]{1}\\b", word), # get rid of one letter words
+                !grepl("\\bwww*.", word)) %>% # get rid of web addresses
+  mutate(word = tokens(word),
+                word = as.character(tokens_wordstem(word)))
+head(clean_words)
+```
+
+Now we can look at binning and plotting the words
+```{r count_words}
+count_words <- clean_words %>%
+  group_by(word) %>%
+  summarise(n = n()) %>%
+  ungroup() %>%
+  arrange(-n) %>% 
+  top_n(n = 50, wt = n) %>% 
+  mutate(word = reorder(word, n))
+```
+
+
+```{r plot_words}
+ggplot(count_words, aes(word, n)) +
+  geom_col() +
+  labs(xlab = NULL, title = "Code of Federal Regulations", subtitle = "Title 50, Chapter VI, Part 648",
+       caption = sprintf("Data accessed from https://www.gpo.gov/fdsys/browse/collectionCfr.action?collectionCode=CFR on %s", format(Sys.Date(), "%d %B %Y"))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.direction = "horizontal", legend.position = "bottom",
+        text = element_text(size = 8)) +
+  coord_flip() +
+  theme_minimal()
+
+```
+
