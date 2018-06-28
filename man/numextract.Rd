@@ -2,29 +2,32 @@
 % Please edit documentation in R/functions.R
 \name{numextract}
 \alias{numextract}
-\title{numextract}
+\title{Extract the Part Numbers}
 \usage{
-numextract(string, return = c("min", "max"))
+numextract(string, return = c("min", "max")[1])
 }
 \arguments{
-\item{return}{}
+\item{string}{ideally \code{cfr_part()}$parts}
+
+\item{return}{min or max, default is "min"}
 }
 \value{
-
+numeric value from 1 to `Inf``
 }
 \description{
+\code{numextract} takes the part numbers from \code{cfr_part} output.
+}
+\details{
 numextract
+
+Each CFR chapter has multiple parts that often span volumes. To facilitate targeting a specific   part, it's necessary to evaluate which parts are in each volume (e.g., "Parts 18 to 199). The CFR sometimes uses terms like "END" or "end" to denote the maximum part in each chapter. \code{numextract} simply returns the max as `Inf` in these situations.
 }
 \examples{
 
-\dontrun{data(all_cfr)
+part_vec <- cfr_urls(year = 2017, title = 50)
+parts <- cfr_part(part_vec[1])
+numextract(parts$parts, return = "max")
 
-NE_cfr <- all_cfr \%>\%
-dplyr::mutate(min_parts = purrr::map(parts, numextract, "min"),
-max_parts = purrr::map(parts, numextract, "max")) \%>\%
-dplyr::filter(grepl("Chapter VI", chapters),
-min_parts <= 648,
-max_parts > 648)}
 
 }
 \keyword{internal}

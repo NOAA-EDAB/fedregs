@@ -2,14 +2,44 @@
 % Please edit documentation in R/functions.R
 \name{cfr_text}
 \alias{cfr_text}
-\title{cfr_text}
+\title{Extract the Text for a Given Year, Title, Chapter, and Part}
 \usage{
 cfr_text(year, title_number, chapter, part, subpart = NULL,
   return_tidytext = TRUE, verbose = FALSE)
 }
 \arguments{
+\item{year}{numeric between 1996 and 2017.}
+
+\item{title_number}{numeric between 1 and 50.}
+
+\item{chapter}{numeric or roman numeral.}
+
+\item{part}{numeric.}
+
+\item{subpart}{NULL. Placeholder for future functionality.}
+
+\item{return_tidytext}{logical. TRUE = tidytext, FALSE = raw data}
+
 \item{verbose}{}
 }
+\value{
+a tibble with year, title_number, chapter, part, and text nested by subpart
+}
 \description{
+\code{cfr_text} returns a tibble of CFR text
+}
+\details{
 cfr_text
+
+This function is the main function of the \code{fedregs} package. It takes the title, chapter, part, and year and returns a tibble of raw text (\code{return_tidytext = FALSE}) or \href{https://www.tidytextmining.com/tidytext.html}{tidytext} text (\code{return_tidytext = TRUE}). N.b., it has not been extensively tested on titles and chapters other than Title 50 chapter VI and part 648.
+}
+\examples{
+regs <- cfr_text(year = 2017,
+title_number = 50,
+chapter = 6,
+part = 648,
+return_tidytext = TRUE,
+verbose = TRUE)
+head(regs)
+
 }
