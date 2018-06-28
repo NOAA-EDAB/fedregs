@@ -5,16 +5,20 @@ output: github_document
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
 ```{r, echo = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "README-"
-)
+knitr::opts_chunk$set(collapse=TRUE, comment="##", fig.retina=2, fig.path = "README_figs/README-")
 ```
 
-# fedregs
+## 'fedregs': A Package to Facilitate Text Analysis of the US Code of Federal Regulations
 
-The goal of fedregs is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go). 
+[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active)
+<!-- [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs) -->
+<!-- [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs) -->
+<!-- [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) -->
+<!-- ![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs) -->
+<!-- [![keybase verified](https://img.shields.io/badge/keybase-verified-brightgreen.svg)](https://gist.github.com/slarge/be2f2c14fd78cac24697) -->
+
+
+The goal of `fedregs` is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go). 
 
 ## Installation
 
@@ -27,9 +31,9 @@ devtools::install_github("slarge/fedregs")
 
 ## Example
 
-The Code of federal regulations is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Right now, I'm mostly interested in a specific part and maybe the associated subparts for a given year. The `cfr_text()` function does a few things. First, each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so the function gathers all the URLs for a given title/year combination. These URLs are parsed to document the chapters, parts, and subparts associated with the volume and the target URLs are further parsed to provide a data frame of the text for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext]() format.     
+The Code of federal regulations is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Right now, I'm mostly interested in a specific part and maybe the associated subparts for a given year. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function for in the package and it basically gathers all the URLs for a given title/year combination and parses these URLs to determine the chapters, parts, and subparts associated with the volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format.     
 
-```{r get_regs, echo = TRUE}
+```{r get_regs, echo = TRUE, message = FALSE}
 library(fedregs)
 library(dplyr)
 library(tidyr)
@@ -41,7 +45,7 @@ regs <- cfr_text(year = 2017,
                  chapter = 6,
                  part = 648,
                  return_tidytext = TRUE,
-                 verbose = TRUE)
+                 verbose = FALSE)
 head(regs)
 ```
 Now, we can unnest the tibble and take a peek at the data to see what we have to poke at.
@@ -92,7 +96,7 @@ count_words <- clean_words %>%
 ggplot(count_words, aes(word, n)) +
   geom_col() +
   labs(xlab = NULL, title = "Code of Federal Regulations", subtitle = "Title 50, Chapter VI, Part 648",
-       caption = sprintf("Data accessed from https://www.gpo.gov/fdsys/browse/collectionCfr.action?collectionCode=CFR on %s", format(Sys.Date(), "%d %B %Y"))) +
+       caption = sprintf("Data accessed on %s from:\n https://www.gpo.gov/fdsys/browse/collectionCfr.action?collectionCode=CFR", format(Sys.Date(), "%d %B %Y"))) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         legend.direction = "horizontal", legend.position = "bottom",
         text = element_text(size = 8)) +
