@@ -1,6 +1,6 @@
 Package: fedregs
 Type: Package
-Title: A Porthole Into the US Code of Federal Regulations
+Title: A Package to Facilitate Text Analysis of the US Code of Federal Regulations
 Version: 0.1.0
 Authors@R: person("Scott", "Large", email = "scott.large@noaa.gov", role = c("cre", "aut"))
 Description: The Code of Federal Regulations (CFR) annual edition is the codification 
