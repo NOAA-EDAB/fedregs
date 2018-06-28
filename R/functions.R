@@ -7,7 +7,7 @@
 #' @details The Code of Federal Regulations (CFR) is divided into titles, chapters, parts, subparts, and     sections. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so \code{cfr_urls} function scrapes up all the valid URLs for a given title/year combination.
 #'
 #' @param year numeric (YYYY) between 1996 and 2017.
-#' @param title numeric between 1 and 50.
+#' @param title_number numeric between 1 and 50.
 #' @param check_url logical. Should the URLs be tested using \code{httr::http:error()}.
 #' @param verbose logical. Will return "helpful" messages regarding the status of the URL.
 #'
@@ -19,7 +19,7 @@
 #'
 #' library(dplyr)
 #'
-#' cfr_url_list <- expand.grid(years = 2017:2018,
+#' cfr_url_list <- expand.grid(years = 2015:2017,
 #'   title = 50,
 #'   KEEP.OUT.ATTRS = FALSE,
 #'   stringsAsFactors = FALSE) %>%
@@ -27,17 +27,26 @@
 #'   head(cfr_url_list)
 #'
 #'
-cfr_urls <- function(year, title, check_url = TRUE, verbose = FALSE) {
+cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
+
+  if(!year %in% seq(1996, 2017)){
+    stop("Year must be between 1996 and 2017.\n")
+  }
+
+  if(!title_number %in% seq(1, 50)){
+    stop("Title must be a numeric value between 1 and 50.\n")
+  }
+
 
   url_head <- "https://www.gpo.gov/fdsys/"
-  url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title)
+  url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title_number)
 
 
   url_list <- purrr::possibly( ~.x %>% xml2::read_html() %>%    # Try to take a URL, read it,
                                  rvest::html_nodes('a') %>%
                                  rvest::html_attr("href"),
                                NA)(url) %>%
-    grep(pattern =  sprintf("title%s.*?.xml", title),  value = TRUE)
+    grep(pattern =  sprintf("title%s.*?.xml", title_number),  value = TRUE)
 
   url_df <- data.frame(URL = sprintf("%s%s", url_head, url_list),
                        stringsAsFactors = FALSE)
@@ -53,14 +62,14 @@ cfr_urls <- function(year, title, check_url = TRUE, verbose = FALSE) {
       }
       if(all(url_df$STATUS == FALSE) &
          verbose) {
-        message(sprintf("All urls for title %s in %s should be fine.\n", title, year))
+        message(sprintf("All urls for title %s in %s should be fine.\n", title_number, year))
       }
     }
     return(as.character(url_df$URL))
   }
   if(nrow(url_df) == 0 &
      verbose){
-    message(sprintf("There aren't any regulations for title %s in %s.\n", title, year))
+    message(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
     return(NA)
   }
 }
