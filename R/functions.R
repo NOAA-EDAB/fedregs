@@ -41,7 +41,6 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
   url_head <- "https://www.gpo.gov/fdsys/"
   url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title_number)
 
-
   url_list <- purrr::possibly( ~.x %>% xml2::read_html() %>%    # Try to take a URL, read it,
                                  rvest::html_nodes('a') %>%
                                  rvest::html_attr("href"),
@@ -56,20 +55,23 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
   if(nrow(url_df) != 0) {
     if(check_url == TRUE){
       url_df$STATUS <- sapply(url_df$URL, httr::http_error, httr::config(followlocation = 0L), USE.NAMES = FALSE)
-      if(any(url_df$STATUS == TRUE) &
-         verbose){
-        message("The following urls result in an http error:", url_df$URL[url_df$STATUS == TRUE])
+      if(any(url_df$STATUS == TRUE)){
+        if(verbose){
+          message("The following urls result in an http error:", url_df$URL[url_df$STATUS == TRUE])
+        }
       }
-      if(all(url_df$STATUS == FALSE) &
-         verbose) {
-        message(sprintf("All urls for title %s in %s should be fine.\n", title_number, year))
+      if(all(url_df$STATUS == FALSE)) {
+        if(verbose){
+          message(sprintf("All urls for title %s in %s should be fine.\n", title_number, year))
+        }
       }
     }
     return(as.character(url_df$URL))
   }
-  if(nrow(url_df) == 0 &
-     verbose){
-    message(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
+  if(nrow(url_df) == 0){
+    if(verbose){
+      message(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
+    }
     return(NA)
   }
 }
@@ -88,7 +90,7 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
 #'
 #' @examples
 #'
-#' cfr_part_vec <- cfr_urls(year = 2017, title = 50)
+#' cfr_part_vec <- cfr_urls(year = 2017, title_number = 50)
 #' cfr_part(cfr_part_vec[1])
 #'
 #'
@@ -97,6 +99,10 @@ cfr_part <- function(url, verbose = FALSE){
   ## add a better test ##
   if(is.na(url)){
     stop("NA is not a valid url.")
+  }
+
+  if(httr::http_error(httr::GET(url))){
+    stop("The URL is not valid.")
   }
 
   res <- httr::GET(url)
@@ -153,8 +159,17 @@ cfr_part <- function(url, verbose = FALSE){
 #'
 numextract <- function(string, return = c("min", "max")[1]){
 
+  if(!grepl("part*", tolower(string))){
+    stop("Make sure you are providing a valid 'part'.")
+  }
+
   num_vec <- unlist(regmatches(string,
                                gregexpr("[[:digit:]]+\\.*[[:digit:]]*", string)))
+
+  if(length(num_vec) == 0) {
+    stop("Make sure string is a numeric value.")
+  }
+
   if(length(num_vec) == 1){
     num_vec <- c(num_vec, Inf)
   }
@@ -189,15 +204,49 @@ numextract <- function(string, return = c("min", "max")[1]){
 #'
 section_function <- function(xml_data, section_number){
 
-  if(is.numeric(section_number)) {
-    section_number <- sprintf("§ %s", section_number)
+  # if(!is.numeric(section_number)) {
+  #   stop("section_number must be numeric.")
+  # }
+
+  # check_section <- xml2::xml_find_all(xml_data,
+  #                    sprintf("//SECTNO[contains(text(), '§ %s')]",
+  #                            section_number)) %>%
+  #   xml2::xml_text(.)
+
+  check_section <- xml2::xml_find_all(xml_data,
+                                      sprintf("//SECTNO[contains(text(), '%s')]",
+                                              section_number)) %>%
+    xml2::xml_text(.)
+
+
+  if(length(check_section) == 0L){
+
+    check_section <- xml2::xml_find_all(xml_data,
+                                          sprintf("//SECTNO[contains(text(), '§ %s')]",
+                                                  section_number)) %>%
+      xml2::xml_text(.)
+  }
+
+  if(length(check_section) == 0L){
+    check_section <- xml2::xml_find_all(xml_data,
+                                          sprintf("//SECTNO[contains(text(), '%s')]",
+                                                  section_number)) %>%
+      xml2::xml_text(.)
   }
 
 
-  xml2::xml_find_all(xml_data,
-                     sprintf(".//SECTNO[text()='%s']/following-sibling::P",
-                             section_number)) %>%
-    xml2::xml_text(.)
+  if(length(check_section) == 0L){
+   stop("For some reason your section number can't be found. Double check and try again.")
+  }
+
+  all_sections <- lapply(check_section, function(x) xml2::xml_find_all(xml_data,
+                                                           sprintf("//SECTNO[text()='%s']/following-sibling::P",
+                                                                   x)) %>%
+                           xml2::xml_text(.))
+
+
+  return(all_sections[[grep(sprintf("%s$", section_number), check_section, value = FALSE)]])
+
 }
 
 
@@ -228,7 +277,7 @@ section_function <- function(xml_data, section_number){
 #' head(regs)
 #'
 
-cfr_text <- function(year, title_number, chapter, part, subpart = NULL, return_tidytext = TRUE,
+cfr_text <- function(year, title_number, chapter, part, return_tidytext = TRUE,
                      verbose = FALSE) {
 
   if(!year %in% seq(1996, 2017)){
@@ -239,12 +288,15 @@ cfr_text <- function(year, title_number, chapter, part, subpart = NULL, return_t
     stop("Title must be a numeric value between 1 and 50.\n")
   }
 
+  if(!is.numeric(chapter)){
+    stop("Chapter must be a numeric value, not a Roman Numeral.\n")
+  }
   if(is.numeric(chapter)){
     chapter <- as.character(as.roman(chapter))
   }
 
-  if(!is.null(subpart)){
-    stop("cfr_text() is not able to parse to subpart, yet.")
+  if(!is.numeric(part)){
+    stop("Part must be a numeric value.\n")
   }
 
   cfr_url_list <- cfr_urls(year = year, title = title_number, check_url = TRUE, verbose = verbose)
@@ -295,7 +347,6 @@ cfr_text <- function(year, title_number, chapter, part, subpart = NULL, return_t
   section_data <- dplyr::data_frame(SUBPART_NAME = rep(names(section_numbers),
                                                        sapply(section_numbers, length)),
                                     SECTION_NUMBER = unlist(section_numbers))
-
 
   section_text <- section_data %>%
     dplyr::mutate(year = year,
