@@ -102,27 +102,37 @@ test_that("We can extract some text.", {
 
   good_section_number <- "§ 801.1"
   bad_section_number <- 1001.1
+  wrong_section_number <- "§ 1001.1"
+  skinny_section_number <- "\u00A7\u200918.94"
 
   good_url <-  "https://www.gpo.gov/fdsys/bulkdata/CFR/2001/title-16/CFR-2001-title16-vol1.xml"
   # good_url <- "https://www.gpo.gov/fdsys/bulkdata/CFR/1999/title-10/CFR-1999-title10-vol2.xml"
   # good_url <- "https://www.gpo.gov/fdsys/bulkdata/CFR/1999/title-10/CFR-1999-title10-vol2.xml"
-  # good_url <- "https://www.gpo.gov/fdsys/bulkdata/CFR/2012/title-50/CFR-2012-title50-vol9.xml"
+  skinny_url <- "https://www.gpo.gov/fdsys/bulkdata/CFR/2017/title-50/CFR-2017-title50-vol9.xml"
 
   good_data <- good_url %>%
     httr::GET() %>%
     httr::content(as = "text", encoding = "UTF-8") %>%
     xml2::read_xml()
 
+  skinny_data <- skinny_url %>%
+    httr::GET() %>%
+    httr::content(as = "text", encoding = "UTF-8") %>%
+    xml2::read_xml()
+
   testthat::expect_error(section_function(xml_data = good_data,
                                 section_number = bad_section_number),
-               "For some reason your section number can't be found. Double check and try again.")
+               "Section numbers are expected to have the section sign: \u00A7.")
 
-  # testthat::expect_error(section_function(xml_data = good_data,
-  #                               section_number = char_section_number),
-  #              "section_number must be numeric.")
+  testthat::expect_error(section_function(xml_data = good_data,
+                                          section_number = wrong_section_number),
+                         "For some reason your section number can't be found. Double check and try again.")
 
   testthat::expect_true(is.character(section_function(xml_data = good_data,
                                             section_number = good_section_number)))
+
+  testthat::expect_true(is.character(section_function(xml_data = skinny_data,
+                                                      section_number = skinny_section_number)))
 
 })
 
