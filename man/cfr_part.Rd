@@ -8,6 +8,8 @@ cfr_part(url, verbose = FALSE)
 }
 \arguments{
 \item{url}{A valid url for .xml CFR volumes. Ideally, from \code{cfr_urls}.}
+
+\item{verbose}{logical. Will return "helpful" messages regarding the status of the URL.}
 }
 \value{
 Numeric (year, title, volume, and chapters) and characters (parts and URL).
@@ -22,8 +24,8 @@ Since we're after more refined data than a single volume, we need to figure out 
 }
 \examples{
 
-cfr_part_vec <- cfr_urls(year = 2017, title = 50)
-cfr_part(cfr_part_vec[1])
+part_vec <- cfr_urls(year = 2017, title_number = 50)
+cfr_part(part_vec[1])
 
 
 }

@@ -4,8 +4,8 @@
 \alias{cfr_text}
 \title{Extract the Text for a Given Year, Title, Chapter, and Part}
 \usage{
-cfr_text(year, title_number, chapter, part, subpart = NULL,
-  return_tidytext = TRUE, verbose = FALSE)
+cfr_text(year, title_number, chapter, part, return_tidytext = TRUE,
+  verbose = FALSE)
 }
 \arguments{
 \item{year}{numeric between 1996 and 2017.}
@@ -16,11 +16,9 @@ cfr_text(year, title_number, chapter, part, subpart = NULL,
 
 \item{part}{numeric.}
 
-\item{subpart}{NULL. Placeholder for future functionality.}
-
 \item{return_tidytext}{logical. TRUE = tidytext, FALSE = raw data}
 
-\item{verbose}{}
+\item{verbose}{logical. Will return "helpful" messages regarding the status of the URL.}
 }
 \value{
 a tibble with year, title_number, chapter, part, and text nested by subpart

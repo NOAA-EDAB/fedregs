@@ -3,4 +3,6 @@
 export(cfr_part)
 export(cfr_text)
 export(cfr_urls)
+export(numextract)
 export(section_function)
+importFrom(magrittr,"%>%")

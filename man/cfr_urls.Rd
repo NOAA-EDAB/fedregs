@@ -4,12 +4,12 @@
 \alias{cfr_urls}
 \title{URLs for .xml Code of Federal Regulations.}
 \usage{
-cfr_urls(year, title, check_url = TRUE, verbose = FALSE)
+cfr_urls(year, title_number, check_url = TRUE, verbose = FALSE)
 }
 \arguments{
 \item{year}{numeric (YYYY) between 1996 and 2017.}
 
-\item{title}{numeric between 1 and 50.}
+\item{title_number}{numeric between 1 and 50.}
 
 \item{check_url}{logical. Should the URLs be tested using \code{httr::http:error()}.}
 
@@ -27,16 +27,13 @@ cfr_urls
 The Code of Federal Regulations (CFR) is divided into titles, chapters, parts, subparts, and     sections. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so \code{cfr_urls} function scrapes up all the valid URLs for a given title/year combination.
 }
 \examples{
-
-
 library(dplyr)
-
-cfr_url_list <- expand.grid(years = 2017:2018,
+url_list <- expand.grid(years = 2015:2017,
   title = 50,
   KEEP.OUT.ATTRS = FALSE,
   stringsAsFactors = FALSE) \%>\%
   mutate(url = purrr::map2(years, title, cfr_urls, check_url = TRUE))
-  head(cfr_url_list)
+  head(url_list)
 
 
 }

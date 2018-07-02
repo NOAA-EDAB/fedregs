@@ -24,10 +24,9 @@ Each CFR chapter has multiple parts that often span volumes. To facilitate targe
 }
 \examples{
 
-part_vec <- cfr_urls(year = 2017, title = 50)
+part_vec <- cfr_urls(year = 2017, title_number = 50)
 parts <- cfr_part(part_vec[1])
 numextract(parts$parts, return = "max")
-
 
 }
 \keyword{internal}
