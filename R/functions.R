@@ -13,18 +13,16 @@
 #'
 #' @return Valid URLs are returned as a vector of character strings. Invalid URLs are returned as `NA`'s.
 #' @export
+#' @importFrom magrittr %>%
 #'
 #' @examples
-#'
-#'
 #' library(dplyr)
-#'
-#' cfr_url_list <- expand.grid(years = 2015:2017,
+#' url_list <- expand.grid(years = 2015:2017,
 #'   title = 50,
 #'   KEEP.OUT.ATTRS = FALSE,
 #'   stringsAsFactors = FALSE) %>%
 #'   mutate(url = purrr::map2(years, title, cfr_urls, check_url = TRUE))
-#'   head(cfr_url_list)
+#'   head(url_list)
 #'
 #'
 cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
@@ -84,14 +82,16 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
 #' @details Since we're after more refined data than a single volume, we need to figure out what chapters and parts are associated with each volume. This function parses the xml and scrapes the Table of Contents for the information held in each volume.
 #'
 #' @param url A valid url for .xml CFR volumes. Ideally, from \code{cfr_urls}.
+#' @param verbose logical. Will return "helpful" messages regarding the status of the URL.
 #'
 #' @return Numeric (year, title, volume, and chapters) and characters (parts and URL).
 #' @export
+#' @importFrom magrittr %>%
 #'
 #' @examples
 #'
-#' cfr_part_vec <- cfr_urls(year = 2017, title_number = 50)
-#' cfr_part(cfr_part_vec[1])
+#' part_vec <- cfr_urls(year = 2017, title_number = 50)
+#' cfr_part(part_vec[1])
 #'
 #'
 cfr_part <- function(url, verbose = FALSE){
@@ -149,13 +149,14 @@ cfr_part <- function(url, verbose = FALSE){
 #'
 #' @return numeric value from 1 to `Inf``
 #'
+#' @export
+#'
 #' @keywords internal
 #' @examples
 #'
-#' part_vec <- cfr_urls(year = 2017, title = 50)
+#' part_vec <- cfr_urls(year = 2017, title_number = 50)
 #' parts <- cfr_part(part_vec[1])
 #' numextract(parts$parts, return = "max")
-#'
 #'
 numextract <- function(string, return = c("min", "max")[1]){
 
@@ -185,33 +186,30 @@ numextract <- function(string, return = c("min", "max")[1]){
 #'
 #' @title Extract the Text from a Section.
 #' @description \code{section_function} returns the parsed text from a section.
-#' @details Internal function that takes an xml object and locates the appropriate section and extracts the text. The rowdy "§ " is optional.
+#' @details Internal function that takes an xml object and locates the appropriate section and extracts the text.
 #'
 #' @param xml_data xml document
 #' @param section_number character or numeric
 #'
 #' @return character vector
 #' @export
+#' @importFrom magrittr %>%
 #'
 #' @keywords internal
 #'
 #' @examples
+#' library(magrittr)
 #' xml_dat <- "https://www.gpo.gov/fdsys/bulkdata/CFR/2017/title-50/CFR-2017-title50-vol9.xml" %>%
 #' httr::GET() %>%
 #' httr::content(as = "text", encoding = "UTF-8") %>%
 #' xml2::read_xml()
-#' section_function(xml_data =xml_dat, section_number = 18.94)
+#' section_function(xml_data =xml_dat, section_number = sprintf("§\u2009%s",18.94))
 #'
 section_function <- function(xml_data, section_number){
 
-  # if(!is.numeric(section_number)) {
-  #   stop("section_number must be numeric.")
-  # }
-
-  # check_section <- xml2::xml_find_all(xml_data,
-  #                    sprintf("//SECTNO[contains(text(), '§ %s')]",
-  #                            section_number)) %>%
-  #   xml2::xml_text(.)
+  if(!grepl("\u00A7", section_number)){
+    stop("Section numbers are expected to have the section sign: \u00A7.")
+  }
 
   check_section <- xml2::xml_find_all(xml_data,
                                       sprintf("//SECTNO[contains(text(), '%s')]",
@@ -219,20 +217,21 @@ section_function <- function(xml_data, section_number){
     xml2::xml_text(.)
 
 
-  if(length(check_section) == 0L){
-
-    check_section <- xml2::xml_find_all(xml_data,
-                                          sprintf("//SECTNO[contains(text(), '§ %s')]",
-                                                  section_number)) %>%
-      xml2::xml_text(.)
-  }
-
-  if(length(check_section) == 0L){
-    check_section <- xml2::xml_find_all(xml_data,
-                                          sprintf("//SECTNO[contains(text(), '%s')]",
-                                                  section_number)) %>%
-      xml2::xml_text(.)
-  }
+  # if(length(check_section) == 0L){
+  #
+  #   check_section <- xml2::xml_find_all(xml_data,
+  #                                         sprintf("//SECTNO[contains(text(), '§\u2009%s')]",
+  #                                                 # "\u2009",
+  #                                                 section_number)) %>%
+  #     xml2::xml_text(.)
+  # }
+  #
+  # if(length(check_section) == 0L){
+  #   check_section <- xml2::xml_find_all(xml_data,
+  #                                         sprintf("//SECTNO[contains(text(), '%s')]",
+  #                                                 section_number)) %>%
+  #     xml2::xml_text(.)
+  # }
 
 
   if(length(check_section) == 0L){
@@ -260,12 +259,12 @@ section_function <- function(xml_data, section_number){
 #' @param title_number numeric between 1 and 50.
 #' @param chapter numeric or roman numeral.
 #' @param part numeric.
-#' @param subpart NULL. Placeholder for future functionality.
 #' @param return_tidytext logical. TRUE = tidytext, FALSE = raw data
-#' @param verbose
+#' @param verbose logical. Will return "helpful" messages regarding the status of the URL.
 #'
 #' @return a tibble with year, title_number, chapter, part, and text nested by subpart
 #' @export
+#' @importFrom magrittr %>%
 #'
 #' @examples
 #' regs <- cfr_text(year = 2017,
@@ -292,14 +291,17 @@ cfr_text <- function(year, title_number, chapter, part, return_tidytext = TRUE,
     stop("Chapter must be a numeric value, not a Roman Numeral.\n")
   }
   if(is.numeric(chapter)){
-    chapter <- as.character(as.roman(chapter))
+    chapter <- as.character(utils::as.roman(chapter))
   }
 
   if(!is.numeric(part)){
     stop("Part must be a numeric value.\n")
   }
 
-  cfr_url_list <- cfr_urls(year = year, title = title_number, check_url = TRUE, verbose = verbose)
+  cfr_url_list <- cfr_urls(year = year,
+                           title_number = title_number,
+                           check_url = TRUE,
+                           verbose = verbose)
 
   if(all(is.na(cfr_url_list) == TRUE)){
     stop(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
@@ -361,15 +363,17 @@ cfr_text <- function(year, title_number, chapter, part, return_tidytext = TRUE,
     dplyr::rename(subpart = SUBPART_NAME)
 
   if(return_tidytext){
-    return(section_text %>%
+    out <- section_text %>%
              tidytext::unnest_tokens(word, TEXT) %>%
              dplyr::group_by(year, title_number, chapter, part, subpart) %>%
-             tidyr::nest())
+             tidyr::nest()
+
   }
 
   if(!return_tidytext){
-    return(section_text %>%
+    out <- section_text %>%
              dplyr::group_by(year, title_number, chapter, part, subpart) %>%
-             tidyr::nest())
+             tidyr::nest()
   }
+  return(out)
 }
