@@ -1,23 +1,26 @@
 Package: fedregs
 Type: Package
-Title: A Porthole Into the US Code of Federal Regulations
+Title: A Package to Facilitate Text Analysis of the US Code of Federal Regulations
 Version: 0.1.0
 Authors@R: person("Scott", "Large", email = "scott.large@noaa.gov", role = c("cre", "aut"))
 Description: The Code of Federal Regulations (CFR) annual edition is the codification 
     of the general and permanent rules published in the Federal Register by the departments
     and agencies of the Federal Government of the United States of America. Simply, the 
     fedregs package facilitates word processing and sentiment analysis of the CFR using tidy principles.
-License: GPL 3.0
+License: GPL-3
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.1.0),
-    magrittr (>= 1.5)
 Imports: dplyr (>= 0.7.4),
+    magrittr (>= 1.5),
     xml2 (>= 1.2.0),
     purrr(>= 0.2.5),
     rvest(>= 0.3.2),
     stringi(>= 1.1.7),
-    httr (>= 1.3.1)
-Suggests: ggplot2 (>= 2.2.1.9),
-    tidyr(>= 0.8.0)
+    httr (>= 1.3.1),
+    tidytext (>= 0.1.9)
+Suggests: 
+    ggplot2 (>= 2.2.1),
+    tidyr (>= 0.8.0),
+    testthat (>= 2.0.0)
 RoxygenNote: 6.0.1

@@ -2,14 +2,33 @@
 % Please edit documentation in R/functions.R
 \name{section_function}
 \alias{section_function}
-\title{section_function}
+\title{Extract the Text from a Section.}
 \usage{
-section_function(data, subpart_number)
+section_function(xml_data, section_number)
 }
 \arguments{
-\item{subpart_number}{}
+\item{xml_data}{xml document}
+
+\item{section_number}{character or numeric}
+}
+\value{
+character vector
 }
 \description{
+\code{section_function} returns the parsed text from a section.
+}
+\details{
 section_function
+
+Internal function that takes an xml object and locates the appropriate section and extracts the text.
+}
+\examples{
+library(magrittr)
+xml_dat <- "https://www.gpo.gov/fdsys/bulkdata/CFR/2017/title-50/CFR-2017-title50-vol9.xml" \%>\%
+httr::GET() \%>\%
+httr::content(as = "text", encoding = "UTF-8") \%>\%
+xml2::read_xml()
+section_function(xml_data =xml_dat, section_number = sprintf("§\\u2009\%s",18.94))
+
 }
 \keyword{internal}

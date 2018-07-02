@@ -2,24 +2,30 @@
 % Please edit documentation in R/functions.R
 \name{cfr_part}
 \alias{cfr_part}
-\title{cfr_part}
+\title{Parse the Relevant Details for CFR urls.}
 \usage{
 cfr_part(url, verbose = FALSE)
 }
 \arguments{
-\item{url}{}
+\item{url}{A valid url for .xml CFR volumes. Ideally, from \code{cfr_urls}.}
+
+\item{verbose}{logical. Will return "helpful" messages regarding the status of the URL.}
+}
+\value{
+Numeric (year, title, volume, and chapters) and characters (parts and URL).
 }
 \description{
+\code{cfr_part} returns a data_frame year, title, volume, chapters, parts, and URL for each url
+}
+\details{
 cfr_part
+
+Since we're after more refined data than a single volume, we need to figure out what chapters and parts are associated with each volume. This function parses the xml and scrapes the Table of Contents for the information held in each volume.
 }
 \examples{
 
-\dontrun{data(cfr_url_list)
-
-cfr_part_list <- cfr_url_list \%>\%
-dplyr::filter(!is.na(url)) \%>\%
-tidyr::unnest() \%>\%
-dplyr::mutate(all_cfr = purrr::map(url, cfr_part))}
+part_vec <- cfr_urls(year = 2017, title_number = 50)
+cfr_part(part_vec[1])
 
 
 }

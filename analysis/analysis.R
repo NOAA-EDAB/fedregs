@@ -3,6 +3,16 @@
 
 # cfr_url_list <- readRDS("data/cfr_url_list.RDS")
 # devtools::use_data(cfr_url_list, overwrite = TRUE)
+library(dplyr)
+cfr_url_list <- expand.grid(years = 1996:2000,
+   title = 1:20,
+   KEEP.OUT.ATTRS = FALSE,
+   stringsAsFactors = FALSE) %>%
+   mutate(url = purrr::map2(years, title, cfr_urls, check_url = TRUE))
+
+head(cfr_url_list)
+
+cfr_urls(year = 1996, title_number = 1, check_url = TRUE, verbose = TRUE)
 
 tt <- cfr_text(year = 2010,
                title_number = 50,
