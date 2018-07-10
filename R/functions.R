@@ -182,73 +182,6 @@ numextract <- function(string, return = c("min", "max")[1]){
   }
 }
 
-#' section_function
-#'
-#' @title Extract the Text from a Section.
-#' @description \code{section_function} returns the parsed text from a section.
-#' @details Internal function that takes an xml object and locates the appropriate section and extracts the text.
-#'
-#' @param xml_data xml document
-#' @param section_number character or numeric
-#'
-#' @return character vector
-#' @export
-#' @importFrom magrittr %>%
-#'
-#' @keywords internal
-#'
-#' @examples
-#' library(magrittr)
-#' xml_dat <- "https://www.gpo.gov/fdsys/bulkdata/CFR/2017/title-50/CFR-2017-title50-vol9.xml" %>%
-#' httr::GET() %>%
-#' httr::content(as = "text", encoding = "UTF-8") %>%
-#' xml2::read_xml()
-#' section_function(xml_data =xml_dat, section_number = sprintf("§\u2009%s",18.94))
-#'
-section_function <- function(xml_data, section_number){
-
-  if(!grepl("\u00A7", section_number)){
-    stop("Section numbers are expected to have the section sign: \u00A7.")
-  }
-
-  check_section <- xml2::xml_find_all(xml_data,
-                                      sprintf("//SECTNO[contains(text(), '%s')]",
-                                              section_number)) %>%
-    xml2::xml_text(.)
-
-
-  # if(length(check_section) == 0L){
-  #
-  #   check_section <- xml2::xml_find_all(xml_data,
-  #                                         sprintf("//SECTNO[contains(text(), '§\u2009%s')]",
-  #                                                 # "\u2009",
-  #                                                 section_number)) %>%
-  #     xml2::xml_text(.)
-  # }
-  #
-  # if(length(check_section) == 0L){
-  #   check_section <- xml2::xml_find_all(xml_data,
-  #                                         sprintf("//SECTNO[contains(text(), '%s')]",
-  #                                                 section_number)) %>%
-  #     xml2::xml_text(.)
-  # }
-
-
-  if(length(check_section) == 0L){
-   stop("For some reason your section number can't be found. Double check and try again.")
-  }
-
-  all_sections <- lapply(check_section, function(x) xml2::xml_find_all(xml_data,
-                                                           sprintf("//SECTNO[text()='%s']/following-sibling::P",
-                                                                   x)) %>%
-                           xml2::xml_text(.))
-
-
-  return(all_sections[[grep(sprintf("%s$", section_number), check_section, value = FALSE)]])
-
-}
-
-
 #' cfr_text
 #'
 #' @title Extract the Text for a Given Year, Title, Chapter, and Part
@@ -259,8 +192,10 @@ section_function <- function(xml_data, section_number){
 #' @param title_number numeric between 1 and 50.
 #' @param chapter numeric or roman numeral.
 #' @param part numeric.
+#' @param token character. Unit for tokenizing. Currently
 #' @param return_tidytext logical. TRUE = tidytext, FALSE = raw data
 #' @param verbose logical. Will return "helpful" messages regarding the status of the URL.
+#' @param ... Extra arguments passed on to tokenizers, such as n and k for "ngrams" and "skip_ngrams"
 #'
 #' @return a tibble with year, title_number, chapter, part, and text nested by subpart
 #' @export
@@ -276,8 +211,8 @@ section_function <- function(xml_data, section_number){
 #' head(regs)
 #'
 
-cfr_text <- function(year, title_number, chapter, part, return_tidytext = TRUE,
-                     verbose = FALSE) {
+cfr_text <- function(year, title_number, chapter, part, token = "words", return_tidytext = TRUE,
+                     verbose = FALSE, ...) {
 
   if(!year %in% seq(1996, 2017)){
     stop("Year must be between 1996 and 2017.\n")
@@ -296,6 +231,10 @@ cfr_text <- function(year, title_number, chapter, part, return_tidytext = TRUE,
 
   if(!is.numeric(part)){
     stop("Part must be a numeric value.\n")
+  }
+
+  if(token == "ngram" & !exists("n", mode = "integer")) {
+    stop("For ngram tokens, please include the 'n' argument.")
   }
 
   cfr_url_list <- cfr_urls(year = year,
@@ -321,53 +260,63 @@ cfr_text <- function(year, title_number, chapter, part, return_tidytext = TRUE,
                   min_parts <= part,
                   max_parts > part)
 
-  cfr_subpart <- cfr_part %>%
+  cfr_xml <- cfr_part %>%
     dplyr::select(url) %>%
     dplyr::pull() %>%
     httr::GET() %>%
     httr::content(as = "text", encoding = "UTF-8") %>%
-    xml2::read_xml() %>%
-    xml2::xml_find_all(sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::SUBPART", part))
+    xml2::read_xml()
 
-  subpart_names <- cfr_subpart %>%
-    purrr::map(~ xml2::xml_find_all(., sprintf(".//HD[contains(text(), '%s')]", "Subpart"))) %>%
-    purrr::map(~ xml2::xml_text(.)) %>%
+  subpart_names <- cfr_xml %>%
+    xml2::xml_find_all(sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD",
+                               part)) %>%
+    xml2::xml_text(.) %>%
     unlist()
 
-  reserved_names <- cfr_subpart %>%
-    purrr::map(~ xml2::xml_find_all(., sprintf(".//RESERVED[contains(text(), '%s')]", "Subpart"))) %>%
-    purrr::map(~ xml2::xml_text(.)) %>%
-    unlist()
+  section_all <- dplyr::data_frame(subpart_names) %>%
+    dplyr::mutate(values = purrr::map(subpart_names, function(x) xml2::xml_find_all(x = cfr_xml,
+                                                              sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD[contains(text(), '%s')]/following-sibling::SECTNO",
+                                                                      part,
+                                                                      x)) %>%
+                                 xml2::xml_text(.))) %>%
+    tidyr::unnest()
 
-  subpart_names <- sort(c(subpart_names, reserved_names))
+  cfr_subpart <- cfr_xml %>%
+    xml2::xml_find_all(sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::SUBPART", part))
 
   section_numbers <- cfr_subpart %>%
-    purrr::map(~ xml2::xml_find_all(., ".//SECTNO")) %>%
-    purrr::map(~ xml2::xml_text(.))
+    purrr::map(~ xml2::xml_find_all(., "//SECTION/SECTNO")) %>%
+    purrr::map(~ xml2::xml_text(.)) %>%
+    unlist()
 
-  names(section_numbers) <- subpart_names
-  section_data <- dplyr::data_frame(SUBPART_NAME = rep(names(section_numbers),
-                                                       sapply(section_numbers, length)),
-                                    SECTION_NUMBER = unlist(section_numbers))
+  section_names <- cfr_subpart %>%
+    purrr::map(~ xml2::xml_find_all(., "//SECTION/SUBJECT|//SECTION/RESERVED")) %>%
+    purrr::map(~ xml2::xml_text(.)) %>%
+    unlist()
 
-  section_text <- section_data %>%
-    dplyr::mutate(year = year,
-                  title_number = title_number,
-                  chapter = chapter,
-                  part = part,
-                  TEXT = purrr::map(.x = SECTION_NUMBER,
-                                    ~ section_function(xml_data = cfr_subpart,
-                                                       section_number = .x)),
-                  TEXT = stringi::stri_trim(TEXT),
-                  TEXT = stringi::stri_trans_tolower(TEXT)) %>%
-    dplyr::rename(subpart = SUBPART_NAME)
+  section_text <- dplyr::data_frame(SECTION_NAME = section_names,
+                                    SECTION_NUMBER = section_numbers,
+                                    values = gsub("[^[:digit:].]", "", section_numbers)) %>%
+    dplyr::filter(grepl(sprintf("%s[\\.]", part), SECTION_NUMBER)) %>%
+    dplyr::distinct() %>%
+    dplyr::left_join(section_all, by = "values") %>%
+    dplyr::mutate(TEXT = purrr::map(SECTION_NUMBER, function(x) xml2::xml_find_all(cfr_subpart,
+                                                                            sprintf("//SECTNO[text()='%s']/following-sibling::P",
+                                                                                    x)) %>%
+                               xml2::xml_text(.)),
+           year = year,
+           title_number = title_number,
+           chapter = chapter,
+           part = part,
+           TEXT = stringi::stri_trim(TEXT),
+           TEXT = stringi::stri_trans_tolower(TEXT)) %>%
+    dplyr::rename(subpart = subpart_names)
 
   if(return_tidytext){
     out <- section_text %>%
-             tidytext::unnest_tokens(word, TEXT) %>%
+             tidytext::unnest_tokens(word, TEXT, token, ...) %>%
              dplyr::group_by(year, title_number, chapter, part, subpart) %>%
              tidyr::nest()
-
   }
 
   if(!return_tidytext){
