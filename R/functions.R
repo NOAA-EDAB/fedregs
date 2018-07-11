@@ -16,13 +16,13 @@
 #' @importFrom magrittr %>%
 #'
 #' @examples
-#' library(dplyr)
+#' \dontrun{library(dplyr)
 #' url_list <- expand.grid(years = 2015:2017,
 #'   title = 50,
 #'   KEEP.OUT.ATTRS = FALSE,
 #'   stringsAsFactors = FALSE) %>%
 #'   mutate(url = purrr::map2(years, title, cfr_urls, check_url = TRUE))
-#'   head(url_list)
+#'   head(url_list)}
 #'
 #'
 cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
@@ -89,9 +89,8 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
 #' @importFrom magrittr %>%
 #'
 #' @examples
-#'
-#' part_vec <- cfr_urls(year = 2017, title_number = 50)
-#' cfr_part(part_vec[1])
+#' \dontrun{part_vec <- cfr_urls(year = 2017, title_number = 50)
+#' cfr_part(part_vec[1])}
 #'
 #'
 cfr_part <- function(url, verbose = FALSE){
@@ -153,10 +152,9 @@ cfr_part <- function(url, verbose = FALSE){
 #'
 #' @keywords internal
 #' @examples
-#'
-#' part_vec <- cfr_urls(year = 2017, title_number = 50)
+#' \dontrun{part_vec <- cfr_urls(year = 2017, title_number = 50)
 #' parts <- cfr_part(part_vec[1])
-#' numextract(parts$parts, return = "max")
+#' numextract(parts$parts, return = "max")}
 #'
 numextract <- function(string, return = c("min", "max")[1]){
 
@@ -202,13 +200,13 @@ numextract <- function(string, return = c("min", "max")[1]){
 #' @importFrom magrittr %>%
 #'
 #' @examples
-#' regs <- cfr_text(year = 2017,
+#' \dontrun{regs <- cfr_text(year = 2017,
 #' title_number = 50,
 #' chapter = 6,
 #' part = 648,
 #' return_tidytext = TRUE,
 #' verbose = TRUE)
-#' head(regs)
+#' head(regs)}
 #'
 
 cfr_text <- function(year, title_number, chapter, part, token = "words", return_tidytext = TRUE,

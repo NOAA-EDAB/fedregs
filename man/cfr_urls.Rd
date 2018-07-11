@@ -27,13 +27,13 @@ cfr_urls
 The Code of Federal Regulations (CFR) is divided into titles, chapters, parts, subparts, and     sections. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so \code{cfr_urls} function scrapes up all the valid URLs for a given title/year combination.
 }
 \examples{
-library(dplyr)
+\dontrun{library(dplyr)
 url_list <- expand.grid(years = 2015:2017,
   title = 50,
   KEEP.OUT.ATTRS = FALSE,
   stringsAsFactors = FALSE) \%>\%
   mutate(url = purrr::map2(years, title, cfr_urls, check_url = TRUE))
-  head(url_list)
+  head(url_list)}
 
 
 }

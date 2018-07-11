@@ -23,9 +23,8 @@ cfr_part
 Since we're after more refined data than a single volume, we need to figure out what chapters and parts are associated with each volume. This function parses the xml and scrapes the Table of Contents for the information held in each volume.
 }
 \examples{
-
-part_vec <- cfr_urls(year = 2017, title_number = 50)
-cfr_part(part_vec[1])
+\dontrun{part_vec <- cfr_urls(year = 2017, title_number = 50)
+cfr_part(part_vec[1])}
 
 
 }
