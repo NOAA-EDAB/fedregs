@@ -252,7 +252,7 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
                                                                otherwise = NA,
                                                                quiet = FALSE)))
 
-  cfr_part <- cfr_part_df %>%
+  cfr_select_part <- cfr_part_df %>%
     tidyr::unnest() %>%
     dplyr::mutate(min_parts = purrr::map(parts, numextract, "min"),
                   max_parts = purrr::map(parts, numextract, "max")) %>%
@@ -260,7 +260,7 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
                   min_parts <= part,
                   max_parts > part)
 
-  cfr_xml <- cfr_part %>%
+  cfr_xml <- cfr_select_part %>%
     dplyr::select(url) %>%
     dplyr::pull() %>%
     httr::GET() %>%
