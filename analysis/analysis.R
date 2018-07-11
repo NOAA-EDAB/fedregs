@@ -1,179 +1,92 @@
-## devtools::install_github("hrbrmstr/xmlview")
-# library(xmlview) ## highly optional for this example!
-
-# cfr_url_list <- readRDS("data/cfr_url_list.RDS")
-# devtools::use_data(cfr_url_list, overwrite = TRUE)
+devtools::install_github("slarge/fedregs")
 library(dplyr)
-cfr_url_list <- expand.grid(years = 1996:2000,
-   title = 1:20,
-   KEEP.OUT.ATTRS = FALSE,
-   stringsAsFactors = FALSE) %>%
-   mutate(url = purrr::map2(years, title, cfr_urls, check_url = TRUE))
+library(fedregs)
 
-head(cfr_url_list)
+## Word counts
+total_words <- function(year, title_number, chapter, part){
 
-cfr_urls(year = 1996, title_number = 1, check_url = TRUE, verbose = TRUE)
+  tt <- cfr_text(year = year,
+                 title_number = title_number,
+                 chapter = chapter,
+                 part = part,
+                 return_tidytext = TRUE,
+                 verbose = FALSE)
 
-tt <- cfr_text(year = 2010,
+  stop_words <- dplyr::data_frame(word = quanteda::stopwords("english"))
+
+  clean_words <- tt %>%
+    tidyr::unnest() %>%
+    dplyr::mutate(word = gsub("[[:punct:]]", "", word), # remove punctuation
+                  word = gsub("^[[:digit:]]*", "", word)) %>%  # remove digits (e.g., 1st, 1881a, etc)
+    dplyr::anti_join(stop_words, by = "word") %>%  # remove "stop words"
+    dplyr::filter(is.na(as.numeric(word)),
+                  !grepl("^m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$",
+                         word),
+                  !grepl("\\b[a-z]{1}\\b", word),
+                  !grepl("\\bwww*.", word)) %>%
+    dplyr::mutate(word = quanteda::tokens(word),
+                  word = quanteda::tokens_wordstem(word),
+                  word = as.character(word))
+
+  count_words <- clean_words %>%
+    summarise(year = unique(year),
+              n = n())
+
+  return(count_words)
+
+}
+
+# td <- lapply(2012:2013, function(x) total_words(year = x, title_number = 50, chapter = 6, part = 648))
+tt <- purrr::map_df(1996:2017, ~ cfr_text(year = .x,
                title_number = 50,
                chapter = 6,
                part = 648,
                return_tidytext = TRUE,
-               verbose = TRUE)
+               verbose = TRUE))
 
-stop_words <- dplyr::data_frame(word = quanteda::stopwords("english"))
+td <- purrr::map_df(1996:2017, ~ total_words(year = .x,
+                                             title_number = 50,
+                                             chapter = 6,
+                                             part = 648))
 
-clean_words <- tt %>%
+
+library(ggplot2)
+ggplot(td, aes(x = year, y = n)) +
+  geom_line() +
+  theme_minimal()
+
+# td will be a data.frame of year and total number of words
+
+
+
+## #3 look at the bind_tf_idf
+## work through: https://www.tidytextmining.com/tfidf.html#the-bind_tf_idf-function
+
+year_words <- purrr::map_df(2016:2017, ~ cfr_text(year = .x,
+                                              title_number = 50,
+                                              chapter = 6,
+                                              part = 648,
+                                              return_tidytext = TRUE,
+                                              verbose = FALSE))
+# year_words <- bind_rows(cfr_text(year = 2015,
+#                                  title_number = 50,
+#                                  chapter = 6,
+#                                  part = 648,
+#                                  return_tidytext = TRUE,
+#                                  verbose = FALSE),
+#                         cfr_text(year = 2016,
+#                                  title_number = 50,
+#                                  chapter = 6,
+#                                  part = 648,
+#                                  return_tidytext = TRUE,
+#                                  verbose = FALSE))
+
+book_words <- year_words %>%
   tidyr::unnest() %>%
-  dplyr::mutate(word = gsub("[[:punct:]]", "", word), # remove punctuation
-                word = gsub("^[[:digit:]]*", "", word)) %>%  # remove digits (e.g., 1st, 1881a, etc)
-  dplyr::anti_join(stop_words, by = "word") %>%  # remove "stop words"
-  dplyr::filter(is.na(as.numeric(word)),
-                !grepl("^m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$",
-                      word),
-                !grepl("\\b[a-z]{1}\\b", word),
-                !grepl("\\bwww*.", word)) %>%
-  dplyr::mutate(word = quanteda::tokens(word),
-                word = quanteda::tokens_wordstem(word),
-                word = as.character(word))
-
-count_words <- clean_words %>%
-  group_by(SUBPART_NAME, word) %>%
-  summarise(n = n()) %>%
-  ungroup() %>%
-  arrange(-n)
-
-  # dplyr::count(SUBPART_NAME, word, sort = TRUE)
-
-td <- bind_rows(count_words %>%
-                  group_by(word) %>%
-                  summarise(SUBPART_NAME = "TOTAL",
-                            n = sum(n)) %>%
-                  ungroup() %>%
-                  arrange(-n) %>%
-                  top_n(n = 20, wt = n),
-                count_words %>%
-                  group_by(SUBPART_NAME) %>%
-                  arrange(-n) %>%
-                  top_n(n = 20, wt = n))
-
-ggplot(td, aes(word, n, fill = SUBPART_NAME)) +
-  geom_col() +
-  xlab(NULL) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.direction = "horizontal", legend.position = "bottom") +
-  coord_flip() +
-  facet_wrap(.~SUBPART_NAME, scales = "free_y")
-
-year = 2015
-title_number = 50
-
-chapter = 6
-part = 648
-subpart = NULL
-verbose = TRUE
-#%>%
-# purrr::map(~ gsub("^\u00A7*\u2009", "", .))
+  count(year, word, sort = TRUE) %>%
+  ungroup()
 
 
-td <- all_parts %>%
-  dplyr::filter(grepl("Subpart A", SUBPART_NAME)) %>%
-  tidyr::unnest(data)
-
-tp <-  tidytext::unnest_tokens(tbl = td, output = word, input = TEXT, token = "words")
-
-
-data(stop_words, package = "tidytext")
-
-tidy_books <- tp %>%
-  anti_join(stop_words)
-
-tidy_books %>%
-  count(word, sort = TRUE)
-
-td <- TEXT[[1]]
-tp <- td[1]
-toks <- readRDS("subpart_a.rds")
-# text <- "An example of preprocessing techniques"
-# toks <- quanteda::tokens(tp)  # tokenize into unigrams
-# toks
-toks <- quanteda::tokens_tolower(toks)
-toks <- quanteda::tokens_wordstem(toks)
-sw <- quanteda::stopwords("english")
-toks <- tokens_remove(toks, sw)
-# saveRDS(toks, "subpart_a.rds")
-str(td)
-
-
-toks <- tokens(text)  # tokenize into unigrams
-toks
-
-names(SUBJECT) <- SECTNO
-
-SECTNO = bind_cols(SECTNO = subpart %>%
-                  purrr::map(~ xml2::xml_find_all(., ".//SECTNO")) %>%
-                  purrr::map(~ xml2::xml_text(.)) %>%
-                  purrr::map(~ gsub("^\u00A7*\u2009", "", .)) %>%
-                  unlist,
-                SUBJECT = subpart %>%
-                  purrr::map(~ xml2::xml_find_all(., ".//SUBJECT")) %>%
-                  purrr::map(~ xml2::xml_text(.)) %>%
-                  unlist)
-
-TEXT = subpart %>%
-  purrr::map(~ xml2::xml_find_all(., ".//P")) %>%
-  purrr::map(~ xml2::xml_text(.))
-
-str(all_parts)
-
-
-section <- xml2::read_xml(httr::content(ne_url, as = "text", encoding = "UTF-8")) %>%
-  xml2::xml_find_all(sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::SUBPART/SECTION", 648)) %>%
-  xml2::xml_find_all(".//SUBPART")
-
-
-
-
-
-section <- tt %>%
-  # subpart %>%
-  mutate(SECTNO = nodeset %>%
-           purrr::map(~ xml2::xml_find_all(., ".//SECTNO")) %>%
-           purrr::map(~ xml2::xml_text(.)),
-         SUBJECT = nodeset %>%
-           purrr::map(~ xml2::xml_find_all(., ".//SUBJECT")) %>%
-           purrr::map(~ xml2::xml_text(.)),
-         TEXT = nodeset %>%
-           purrr::map(~ xml2::xml_find_all(., ".//P")) %>%
-           purrr::map(~ xml2::xml_text(.)))
-
-
-
-tt <- data_frame(row = seq_along(subpart),
-                 nodeset = subpart)
-
-
-cells_df <- tt %>%
-    mutate(col_name_raw = nodeset %>% purrr::map(~ xml2::xml_name(.)),
-           cell_text = nodeset %>% purrr::map(~ xml2::xml_text(.)),
-           i = nodeset %>% purrr::map(~ seq_along(.))) %>%
-    select(row, i, col_name_raw, cell_text) %>%
-    tidyr::unnest(cell_text)
-
-str(cells_df)
-
-part_text[1]
-
-xml_view(part_text)
-
-
-tt <- readLines(con = part_text)
-
-
-library(stringi)
-x <- stri_trim(tt)                               # strip surrounding whitespace
-x <- stri_trans_tolower(x)
-
-library(quanteda)
-text <- "An example of preprocessing techniques"
-toks <- tokens(text)
+book_words <- book_words %>%
+  bind_tf_idf(word, book, n)
+book_words
