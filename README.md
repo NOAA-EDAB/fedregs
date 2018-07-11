@@ -10,7 +10,7 @@ The goal of `fedregs` is to allow for easy exploration and analysis of the [Code
 Installation
 ------------
 
-You can install fedregs from github with:
+You can install `fedregs` using:
 
 ``` r
 install.packages("fedregs")
@@ -20,7 +20,7 @@ install.packages("fedregs")
 Example
 -------
 
-The Code of federal regulations is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Right now, I'm mostly interested in a specific part and the associated subparts for a given year. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it basically gathers all the URLs for a given title/year combination and parses these URLs to determine the chapters, parts, and subparts associated with the volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format.
+The [Code of Federal Regulation](https://www.gpo.gov/help/index.html#about_code_of_federal_regulations.htm) is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it will return the text for a specified part, including the associated subparts and sections. Behind the scenes, `cfr_text()` and associated helper functions gather the URLs for a given title/year combination and parses XML to determine the chapters, parts, and subparts associated with each volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format. If *ngrams* are your game, set `token = "ngrams"` and specify `n`.
 
 ``` r
 library(fedregs)
@@ -33,6 +33,8 @@ regs <- cfr_text(year = 2017,
                  title_number = 50,
                  chapter = 6,
                  part = 648,
+                 #token = "ngrams", # uncomment for ngrams of length 2
+                 #n = 2, # uncomment for ngrams of length 2
                  return_tidytext = TRUE,
                  verbose = FALSE)
 head(regs)
@@ -47,7 +49,7 @@ head(regs)
 ## 6  2017           50 VI        648 Subpart F—Management Measure~ <tibble ~
 ```
 
-Now, we can unnest the tibble and take a peek at the data to see what data we have to poke at.
+Now, we can unnest the tibble and take a peek at the data to see what data we have to play with.
 
 ``` r
 regs %>%
@@ -65,7 +67,7 @@ head(stopwords("english"))
 ## [1] "i"      "me"     "my"     "myself" "we"     "our"
 ```
 
-There are some other messes like punctuation, numbers, *i*ths, Roman Numerals, web sites, and random letters (probably from indexed lists) that can be removed with some regex-ing. We can also convert the raw words to word stems to further aggregate our data.
+There are some other messes like punctuation, numbers, *i*ths, Roman Numerals, web sites, and random letters (probably from indexed lists) that can be removed with some simple regex-ing. We can also convert the raw words to word stems to further aggregate our data.
 
 ``` r
 stop_words <- data_frame(word = stopwords("english"))
