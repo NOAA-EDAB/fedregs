@@ -13,14 +13,14 @@ Installation
 You can install fedregs from github with:
 
 ``` r
-# install.packages("devtools")
-devtools::install_github("slarge/fedregs")
+install.packages("fedregs")
+# Or: devtools::install_github("slarge/fedregs")
 ```
 
 Example
 -------
 
-The Code of federal regulations is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Right now, I'm mostly interested in a specific part and maybe the associated subparts for a given year. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function for in the package and it basically gathers all the URLs for a given title/year combination and parses these URLs to determine the chapters, parts, and subparts associated with the volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format.
+The Code of federal regulations is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Right now, I'm mostly interested in a specific part and the associated subparts for a given year. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it basically gathers all the URLs for a given title/year combination and parses these URLs to determine the chapters, parts, and subparts associated with the volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format.
 
 ``` r
 library(fedregs)
@@ -47,7 +47,7 @@ head(regs)
 ## 6  2017           50 VI        648 Subpart F—Management Measure~ <tibble ~
 ```
 
-Now, we can unnest the tibble and take a peek at the data to see what we have to poke at.
+Now, we can unnest the tibble and take a peek at the data to see what data we have to poke at.
 
 ``` r
 regs %>%
@@ -58,7 +58,7 @@ regs %>%
 ## [16] "and"        "butterfish" "fisheries"  "atlantic"   "mackerel"
 ```
 
-Not entirely unexpected, but there are quite a few common words that don't mean anything. These "stop words"" typically don't have important significance and and are filtered out from search queries.
+Not entirely unexpected, but there are quite a few common words that don't mean anything. These "stop words" typically don't have important significance and and are filtered out from search queries.
 
 ``` r
 head(stopwords("english"))
@@ -77,7 +77,7 @@ clean_words <- regs %>%
   anti_join(stop_words, by = "word") %>%  # remove "stop words"
   filter(is.na(as.numeric(word)),
                 !grepl("^m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$",
-                      word),
+                      word), # adios Roman Numerals
                 !grepl("\\b[a-z]{1}\\b", word), # get rid of one letter words
                 !grepl("\\bwww*.", word)) %>% # get rid of web addresses
   mutate(word = tokens(word),
@@ -110,10 +110,14 @@ count_words <- clean_words %>%
 ``` r
 ggplot(count_words, aes(word, n)) +
   geom_col() +
-  labs(xlab = NULL, title = "Code of Federal Regulations", subtitle = "Title 50, Chapter VI, Part 648",
-       caption = sprintf("Data accessed on %s from:\n https://www.gpo.gov/fdsys/browse/collectionCfr.action?collectionCode=CFR", format(Sys.Date(), "%d %B %Y"))) +
+  labs(xlab = NULL, 
+       title = "Code of Federal Regulations", 
+       subtitle = "Title 50, Chapter VI, Part 648",
+       caption = sprintf("Data accessed on %s from:\n https://www.gpo.gov/fdsys/browse/collectionCfr.action?collectionCode=CFR", 
+                         format(Sys.Date(), "%d %B %Y"))) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
-        legend.direction = "horizontal", legend.position = "bottom",
+        legend.direction = "horizontal",
+        legend.position = "bottom",
         text = element_text(size = 8)) +
   coord_flip() +
   theme_minimal()

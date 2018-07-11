@@ -5,3 +5,4 @@
 ^\.travis\.yml$
 ^README_figs$
 ^analysis$
+^cran-comments\.md$
