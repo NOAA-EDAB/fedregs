@@ -37,15 +37,17 @@ total_words <- function(year, title_number, chapter, part){
 }
 
 # td <- lapply(2012:2013, function(x) total_words(year = x, title_number = 50, chapter = 6, part = 648))
-title_50 <- purrr::map_df(1996:2017, ~ cfr_text(year = .x,
-               title_number = 50,
-               chapter = 6,
-               part = 648,
-               return_tidytext = TRUE,
-               verbose = TRUE))
-
-saveRDS(title_50, "analysis/title50_1996-2017.RDS")
-
+# title_50 <- purrr::map_df(1996:2017, ~ cfr_text(year = .x,
+#                title_number = 50,
+#                chapter = 6,
+#                part = 648,
+#                return_tidytext = TRUE,
+#                verbose = TRUE))
+#
+# saveRDS(title_50, "analysis/title50_1996-2017.RDS")
+library(dplyr)
+library(ggplot2)
+title_50 <- readRDS("analysis/title50_1996-2017.RDS")
 
 stop_words <- dplyr::data_frame(word = quanteda::stopwords("english"))
 
@@ -63,17 +65,26 @@ clean_words <- title_50 %>%
                 word = quanteda::tokens_wordstem(word),
                 word = as.character(word))
 
-str(clean_words)
 count_words <- clean_words %>%
   mutate(subpart_name = gsub("\u2014.*","", subpart)) %>%
   group_by(year, subpart_name) %>%
   summarise(n = n())
 
+unique(clean_words$subpart)
 library(ggplot2)
 ggplot(count_words, aes(x = year, y = n))+
   geom_line(aes(color = subpart_name))+
-  facet_wrap(~subpart_name)
-  # geom_area(aes(color = subpart_name, fill = subpart_name), position = "stack")
+  # facet_wrap(~subpart_name) +
+  labs(xlab = NULL,
+     title = "Code of Federal Regulations",
+     subtitle = "Title 50, Chapter VI, Part 648",
+     caption = sprintf("Data accessed on %s from:\n https://www.gpo.gov/fdsys/browse/collectionCfr.action?collectionCode=CFR",
+                       format(Sys.Date(), "%d %B %Y"))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.direction = "horizontal",
+        legend.position = "bottom",
+        text = element_text(size = 8)) +
+  theme_minimal()
 
 
 
@@ -143,3 +154,18 @@ book_words %>%
   labs(x = NULL, y = "tf-idf") +
   facet_wrap(~year, ncol = 2, scales = "free") +
   coord_flip()
+
+
+part_vec <- cfr_urls(year = 2017, title_number = 50)
+lapply(part_vec, cfr_part)
+
+
+title_50_all <- purrr::map2(1996:2017, c(600, 622, 628,) ~ cfr_text(year = .x,
+               title_number = 50,
+               chapter = 6,
+               part = 648,
+               return_tidytext = TRUE,
+               verbose = TRUE))
+
+saveRDS(title_50, "analysis/title50_1996-2017.RDS")
+
