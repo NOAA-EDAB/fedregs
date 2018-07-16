@@ -1,4 +1,4 @@
-devtools::install_github("slarge/fedregs")
+devtools::install_github("slarge/fedregs@dev")
 library(dplyr)
 library(fedregs)
 
