@@ -6,7 +6,7 @@
 \alias{fedregs-package}
 \title{\code{fedregs} package}
 \description{
-A Package to Facilitate Text Analysis of the US Code of Federal Regulations
+Text Analysis of the US Code of Federal Regulations
 }
 \details{
 See the README on
