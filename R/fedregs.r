@@ -1,6 +1,6 @@
 #' \code{fedregs} package
 #'
-#' A Package to Facilitate Text Analysis of the US Code of Federal Regulations
+#' Text Analysis of the US Code of Federal Regulations
 #'
 #' See the README on
 #' \href{https://github.com/slarge/fedregs/blob/master/README.md}{GitHub}

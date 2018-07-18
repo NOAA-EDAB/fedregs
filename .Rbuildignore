@@ -4,3 +4,4 @@
 ^README.*$
 ^analysis$
 ^cran-comments\.md$
+^\.httr-oauth$
