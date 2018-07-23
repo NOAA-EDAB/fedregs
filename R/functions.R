@@ -4,7 +4,7 @@
 #'
 #' @description \code{cfr_urls} returns a character string of valid URLs associated with a year and CFR title.
 #'
-#' @details The Code of Federal Regulations (CFR) is divided into titles, chapters, parts, subparts, and     sections. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so \code{cfr_urls} function scrapes up all the valid URLs for a given title/year combination.
+#' @details The Code of Federal Regulations (CFR) is divided into titles, chapters, parts, subparts, and sections. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so \code{cfr_urls} function scrapes up all the valid URLs for a given title/year combination.
 #'
 #' @param year numeric (YYYY) between 1996 and 2017.
 #' @param title_number numeric between 1 and 50.
@@ -16,7 +16,7 @@
 #' @importFrom magrittr %>%
 #'
 #' @examples
-#' \dontrun{library(dplyr)
+#' \donttest{library(dplyr)
 #' url_list <- expand.grid(years = 2015:2017,
 #'   title = 50,
 #'   KEEP.OUT.ATTRS = FALSE,
@@ -89,7 +89,7 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
 #' @importFrom magrittr %>%
 #'
 #' @examples
-#' \dontrun{part_vec <- cfr_urls(year = 2017, title_number = 50)
+#' \donttest{part_vec <- cfr_urls(year = 2017, title_number = 50)
 #' cfr_part(part_vec[1])}
 #'
 #'
@@ -141,7 +141,7 @@ cfr_part <- function(url, verbose = FALSE){
 #' @title Extract the Part Numbers
 #' @description \code{numextract} takes the part numbers from \code{cfr_part} output.
 #'
-#' @details Each CFR chapter has multiple parts that often span volumes. To facilitate targeting a specific   part, it's necessary to evaluate which parts are in each volume (e.g., "Parts 18 to 199). The CFR sometimes uses terms like "END" or "end" to denote the maximum part in each chapter. \code{numextract} simply returns the max as `Inf` in these situations.
+#' @details Each CFR chapter has multiple parts that often span volumes. To facilitate targeting a specific part, it's necessary to evaluate which parts are in each volume (e.g., Parts 18 to 199). The CFR sometimes uses terms like "END" or "end" to denote the maximum part in each chapter. \code{numextract} simply returns the max as `Inf` in these situations.
 #'
 #' @param string ideally \code{cfr_part()}$parts
 #' @param return min or max, default is "min"
@@ -152,7 +152,7 @@ cfr_part <- function(url, verbose = FALSE){
 #'
 #' @keywords internal
 #' @examples
-#' \dontrun{part_vec <- cfr_urls(year = 2017, title_number = 50)
+#' \donttest{part_vec <- cfr_urls(year = 2017, title_number = 50)
 #' parts <- cfr_part(part_vec[1])
 #' numextract(parts$parts, return = "max")}
 #'
@@ -200,7 +200,7 @@ numextract <- function(string, return = c("min", "max")[1]){
 #' @importFrom magrittr %>%
 #'
 #' @examples
-#' \dontrun{regs <- cfr_text(year = 2017,
+#' \donttest{regs <- cfr_text(year = 2017,
 #' title_number = 50,
 #' chapter = 6,
 #' part = 648,

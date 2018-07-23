@@ -6,7 +6,7 @@ Authors@R: person("Scott", "Large", email = "scott.large@noaa.gov", role = c("cr
 Description: The Code of Federal Regulations (CFR) annual edition is the codification 
     of the general and permanent rules published in the Federal Register by the departments
     and agencies of the Federal Government of the United States of America. Simply, the 
-    fedregs package facilitates word processing and sentiment analysis of the CFR using tidy 
+    'fedregs' package facilitates word processing and sentiment analysis of the CFR using tidy 
     principles. Note: According to the Code of Federal Regulations XML Rendition User Guide Document: 
     "In general, there are no restrictions on re-use of information in Code of Federal Regulations
     material because U.S. Government works are not subject to copyright. OFR and GPO do not
