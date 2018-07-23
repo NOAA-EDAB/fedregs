@@ -36,7 +36,7 @@ cfr_text
 This function is the main function of the \code{fedregs} package. It takes the title, chapter, part, and year and returns a tibble of raw text (\code{return_tidytext = FALSE}) or \href{https://www.tidytextmining.com/tidytext.html}{tidytext} text (\code{return_tidytext = TRUE}). N.b., it has not been extensively tested on titles and chapters other than Title 50 chapter VI and part 648.
 }
 \examples{
-\dontrun{regs <- cfr_text(year = 2017,
+\donttest{regs <- cfr_text(year = 2017,
 title_number = 50,
 chapter = 6,
 part = 648,
