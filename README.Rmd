@@ -13,9 +13,9 @@ knitr::opts_chunk$set(collapse=TRUE, comment="##", fig.retina=2, fig.path = "REA
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active)
 [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs)
 [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs)
-<!-- [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) -->
-<!-- ![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs) -->
-<!-- [![keybase verified](https://img.shields.io/badge/keybase-verified-brightgreen.svg)](https://gist.github.com/slarge/be2f2c14fd78cac24697) -->
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs)
+[![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)
+<!--[![keybase verified](https://img.shields.io/badge/keybase-verified-brightgreen.svg)](https://gist.github.com/slarge/be2f2c14fd78cac24697) -->
 
 
 The goal of `fedregs` is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go). 
@@ -26,7 +26,7 @@ You can install `fedregs` using:
 
 ```{r gh-installation, eval = FALSE}
 install.packages("fedregs")
-# Or: devtools::install_github("slarge/fedregs")
+# Or: devtools::install_github("slarge/fedregs", ref = "cran-prep")
 ```
 
 ## Example
