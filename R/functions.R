@@ -35,17 +35,31 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
     stop("Title must be a numeric value between 1 and 50.\n")
   }
 
+  # url_head <- "https://www.gpo.gov/fdsys/"
+  # url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title_number)
+  # url_list <- purrr::possibly( ~.x %>% xml2::read_html() %>%    # Try to take a URL, read it,
+  #                                rvest::html_nodes('a') %>%
+  #                                rvest::html_attr("href"),
+  #                              NA)(url) %>%
+  #   grep(pattern =  sprintf("title%s.*?.xml", title_number),  value = TRUE)
 
-  url_head <- "https://www.gpo.gov/fdsys/"
-  url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title_number)
 
-  url_list <- purrr::possibly( ~.x %>% xml2::read_html() %>%    # Try to take a URL, read it,
-                                 rvest::html_nodes('a') %>%
-                                 rvest::html_attr("href"),
-                               NA)(url) %>%
-    grep(pattern =  sprintf("title%s.*?.xml", title_number),  value = TRUE)
+  url_head <- "https://www.govinfo.gov/bulkdata/CFR"
+  url <- sprintf("%s/%s/title-%s", url_head, year, title_number)
 
-  url_df <- data.frame(URL = sprintf("%s%s", url_head, url_list),
+  url_list <- purrr::possibly(~.x %>% httr::GET() %>%
+                                httr::content(as = "text", encoding = "utf-8") %>%
+                                xml2::read_xml() %>%
+                                xml2::xml_find_all(".//displayLabel") %>%
+                                xml2::xml_text(),
+                              NA)(url)
+
+  ## remove the zip files
+  url_list <- url_list[!grepl("*.zip", url_list)]
+  ## remove NAs
+  url_list <- url_list[!is.na(url_list)]
+
+  url_df <- data.frame(URL = sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list),
                        stringsAsFactors = FALSE)
 
   Sys.sleep(sample(seq(1, 3, by = 0.001), 1))

@@ -31,4 +31,4 @@ Suggests:
     ggplot2 (>= 2.2.1),
     tidyr (>= 0.8.0),
     testthat (>= 2.0.0)
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
