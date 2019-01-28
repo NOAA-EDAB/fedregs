@@ -1,4 +1,16 @@
-## Test environments
+## Test environments (fedregs version 0.1.1)
+* local Windows 7 x64 build 7601 SP1, R 3.5.0
+* ubuntu 14.04.05 (on travis-ci), R 3.5.0
+
+## R CMD check results
+The previous version failed because of a breaking change in the Code of Federal Regulations API. The US Federal Government was shutdown and the maintainer was not able to update code before the package was removed from CRAN. The current CFR API should be stable for the foreseeable future.
+There were no ERRORs, WARNINGS, or NOTEs.
+
+## Corrections/Comments:
+
+
+
+## Test environments (fedregs version 0.1.0)
 * local Windows 7 x64 build 7601 SP1, R 3.5.0
 * ubuntu 14.04.05 (on travis-ci), R 3.5.0
 
