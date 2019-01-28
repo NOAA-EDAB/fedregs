@@ -3,7 +3,7 @@
 'fedregs': Text Analysis of the US Code of Federal Regulations
 --------------------------------------------------------------
 
-[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active) [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs) [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs) [![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) \[![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)\]
+[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active) [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs) [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs) [![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) ![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)
 
 The goal of `fedregs` is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go).
 
