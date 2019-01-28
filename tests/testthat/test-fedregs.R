@@ -13,7 +13,7 @@ test_that("We get the best CFR URLs.", {
 
   testthat::expect_error(cfr_urls(year = bad_year,
                           title_number = good_title_number,
-                            check_url = TRUE), "Year must be between 1996 and 2017.\n")
+                            check_url = TRUE), "Year must be between 1996 and 2018.\n")
 
   testthat::expect_error(cfr_urls(year = good_year,
                           title_number = bad_title_number,
@@ -115,7 +115,7 @@ test_that("We can go all the way", {
                                   good_title_number,
                                   good_chapter,
                                   good_part),
-                         "Year must be between 1996 and 2017.\n")
+                         "Year must be between 1996 and 2018.\n")
 
   testthat::expect_error(cfr_text(good_year,
                                   bad_title_number,
