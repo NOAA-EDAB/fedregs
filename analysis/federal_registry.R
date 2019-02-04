@@ -36,7 +36,7 @@ tl <- tt %>%
                              grepl("deep-sea|red crab", results.title)~ "Subpart M",
                              grepl("tilefish", results.title)~ "Subpart N",
                              grepl("skate|complex", results.title)~ "Subpart O",
-                             #grepl("")
+                             # grepl(""),
                              TRUE ~ results.title),
          month_date = format(as.Date(results.publication_date), "%Y")) %>%
   filter(!grepl("Subpart [A-Z]{1}", subpart))

@@ -3,7 +3,7 @@
 'fedregs': Text Analysis of the US Code of Federal Regulations
 --------------------------------------------------------------
 
-[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active) [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs) [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs) <!-- [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) --> <!-- ![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs) --> <!-- [![keybase verified](https://img.shields.io/badge/keybase-verified-brightgreen.svg)](https://gist.github.com/slarge/be2f2c14fd78cac24697) -->
+[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active) [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs) [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs) [![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) ![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)
 
 The goal of `fedregs` is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go).
 
@@ -14,7 +14,7 @@ You can install `fedregs` using:
 
 ``` r
 install.packages("fedregs")
-# Or: devtools::install_github("slarge/fedregs")
+# Or: devtools::install_github("slarge/fedregs", ref = "cran-prep")
 ```
 
 Example
@@ -37,16 +37,18 @@ regs <- cfr_text(year = 2017,
                  #n = 2, # uncomment for ngrams of length 2
                  return_tidytext = TRUE,
                  verbose = FALSE)
+## Warning in stri_trim_both(str, pattern): argument is not an atomic vector;
+## coercing
 head(regs)
 ## # A tibble: 6 x 6
-##    year title_number chapter  part subpart                       data     
-##   <dbl>        <dbl> <chr>   <dbl> <chr>                         <list>   
-## 1  2017           50 VI        648 Subpart A—General Provisions  <tibble ~
-## 2  2017           50 VI        648 Subpart B—Management Measure~ <tibble ~
-## 3  2017           50 VI        648 Subpart C—Management Measure~ <tibble ~
-## 4  2017           50 VI        648 Subpart D—Management Measure~ <tibble ~
-## 5  2017           50 VI        648 <NA>                          <tibble ~
-## 6  2017           50 VI        648 Subpart E—Management Measure~ <tibble ~
+##    year title_number chapter  part subpart                       data      
+##   <dbl>        <dbl> <chr>   <dbl> <chr>                         <list>    
+## 1  2017           50 VI        648 Subpart A—General Provisions  <tibble [~
+## 2  2017           50 VI        648 Subpart B—Management Measure~ <tibble [~
+## 3  2017           50 VI        648 Subpart C—Management Measure~ <tibble [~
+## 4  2017           50 VI        648 Subpart D—Management Measure~ <tibble [~
+## 5  2017           50 VI        648 <NA>                          <tibble [~
+## 6  2017           50 VI        648 Subpart E—Management Measure~ <tibble [~
 ```
 
 Now, we can unnest the tibble and take a peek at the data to see what data we have to play with.
@@ -87,14 +89,14 @@ clean_words <- regs %>%
 ## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
 head(clean_words)
 ## # A tibble: 6 x 9
-##    year title_number chapter  part subpart     SECTION_NAME SECTION_NUMBER
-##   <dbl>        <dbl> <chr>   <dbl> <chr>       <chr>        <chr>         
-## 1  2017           50 VI        648 Subpart A—~ Purpose and~ §<U+2009>648.1       
-## 2  2017           50 VI        648 Subpart A—~ Purpose and~ §<U+2009>648.1       
-## 3  2017           50 VI        648 Subpart A—~ Purpose and~ §<U+2009>648.1       
-## 4  2017           50 VI        648 Subpart A—~ Purpose and~ §<U+2009>648.1       
-## 5  2017           50 VI        648 Subpart A—~ Purpose and~ §<U+2009>648.1       
-## 6  2017           50 VI        648 Subpart A—~ Purpose and~ §<U+2009>648.1       
+##    year title_number chapter  part subpart SECTION_NAME SECTION_NUMBER
+##   <dbl>        <dbl> <chr>   <dbl> <chr>   <chr>        <chr>         
+## 1  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
+## 2  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
+## 3  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
+## 4  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
+## 5  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
+## 6  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
 ## # ... with 2 more variables: values <chr>, word <chr>
 ```
 

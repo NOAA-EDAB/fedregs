@@ -41,6 +41,7 @@ title_number = 50,
 chapter = 6,
 part = 648,
 return_tidytext = TRUE,
+token = "words",
 verbose = TRUE)
 head(regs)}
 

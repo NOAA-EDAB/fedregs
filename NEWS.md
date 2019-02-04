@@ -1,9 +1,8 @@
-# fedregs 0.1.1
+## fedregs 0.1.1
 
-## New Stuff
-
+* Updated code to work with the new Code of Federal Regulations API
+* Maximum year increased from 2017 to 2018
 * Added improved error checks in case XML format is off 
-
 
 # fedregs 0.1.0
 

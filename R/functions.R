@@ -6,7 +6,7 @@
 #'
 #' @details The Code of Federal Regulations (CFR) is divided into titles, chapters, parts, subparts, and sections. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so \code{cfr_urls} function scrapes up all the valid URLs for a given title/year combination.
 #'
-#' @param year numeric (YYYY) between 1996 and 2017.
+#' @param year numeric (YYYY) between 1996 and 2018.
 #' @param title_number numeric between 1 and 50.
 #' @param check_url logical. Should the URLs be tested using \code{httr::http:error()}.
 #' @param verbose logical. Will return "helpful" messages regarding the status of the URL.
@@ -17,7 +17,7 @@
 #'
 #' @examples
 #' \donttest{library(dplyr)
-#' url_list <- expand.grid(years = 2015:2017,
+#' url_list <- expand.grid(years = 2015:2018,
 #'   title = 50,
 #'   KEEP.OUT.ATTRS = FALSE,
 #'   stringsAsFactors = FALSE) %>%
@@ -27,25 +27,39 @@
 #'
 cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
 
-  if(!year %in% seq(1996, 2017)){
-    stop("Year must be between 1996 and 2017.\n")
+  if(!year %in% seq(1996, 2018)){
+    stop("Year must be between 1996 and 2018.\n")
   }
 
   if(!title_number %in% seq(1, 50)){
     stop("Title must be a numeric value between 1 and 50.\n")
   }
 
+  # url_head <- "https://www.gpo.gov/fdsys/"
+  # url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title_number)
+  # url_list <- purrr::possibly( ~.x %>% xml2::read_html() %>%    # Try to take a URL, read it,
+  #                                rvest::html_nodes('a') %>%
+  #                                rvest::html_attr("href"),
+  #                              NA)(url) %>%
+  #   grep(pattern =  sprintf("title%s.*?.xml", title_number),  value = TRUE)
 
-  url_head <- "https://www.gpo.gov/fdsys/"
-  url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title_number)
 
-  url_list <- purrr::possibly( ~.x %>% xml2::read_html() %>%    # Try to take a URL, read it,
-                                 rvest::html_nodes('a') %>%
-                                 rvest::html_attr("href"),
-                               NA)(url) %>%
-    grep(pattern =  sprintf("title%s.*?.xml", title_number),  value = TRUE)
+  url_head <- "https://www.govinfo.gov/bulkdata/CFR"
+  url <- sprintf("%s/%s/title-%s", url_head, year, title_number)
 
-  url_df <- data.frame(URL = sprintf("%s%s", url_head, url_list),
+  url_list <- purrr::possibly(~.x %>% httr::GET() %>%
+                                httr::content(as = "text", encoding = "utf-8") %>%
+                                xml2::read_xml() %>%
+                                xml2::xml_find_all(".//displayLabel") %>%
+                                xml2::xml_text(),
+                              NA)(url)
+
+  ## remove the zip files
+  url_list <- url_list[!grepl("*.zip", url_list)]
+  ## remove NAs
+  url_list <- url_list[!is.na(url_list)]
+
+  url_df <- data.frame(URL = sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list),
                        stringsAsFactors = FALSE)
 
   Sys.sleep(sample(seq(1, 3, by = 0.001), 1))
@@ -89,7 +103,7 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
 #' @importFrom magrittr %>%
 #'
 #' @examples
-#' \donttest{part_vec <- cfr_urls(year = 2017, title_number = 50)
+#' \donttest{part_vec <- cfr_urls(year = 2018, title_number = 50)
 #' cfr_part(part_vec[1])}
 #'
 #'
@@ -152,7 +166,7 @@ cfr_part <- function(url, verbose = FALSE){
 #'
 #' @keywords internal
 #' @examples
-#' \donttest{part_vec <- cfr_urls(year = 2017, title_number = 50)
+#' \donttest{part_vec <- cfr_urls(year = 2018, title_number = 50)
 #' parts <- cfr_part(part_vec[1])
 #' numextract(parts$parts, return = "max")}
 #'
@@ -186,7 +200,7 @@ numextract <- function(string, return = c("min", "max")[1]){
 #' @description \code{cfr_text} returns a tibble of CFR text
 #' @details This function is the main function of the \code{fedregs} package. It takes the title, chapter, part, and year and returns a tibble of raw text (\code{return_tidytext = FALSE}) or \href{https://www.tidytextmining.com/tidytext.html}{tidytext} text (\code{return_tidytext = TRUE}). N.b., it has not been extensively tested on titles and chapters other than Title 50 chapter VI and part 648.
 #'
-#' @param year numeric between 1996 and 2017.
+#' @param year numeric between 1996 and 2018.
 #' @param title_number numeric between 1 and 50.
 #' @param chapter numeric or roman numeral.
 #' @param part numeric.
@@ -200,11 +214,12 @@ numextract <- function(string, return = c("min", "max")[1]){
 #' @importFrom magrittr %>%
 #'
 #' @examples
-#' \donttest{regs <- cfr_text(year = 2017,
+#' \donttest{regs <- cfr_text(year = 2018,
 #' title_number = 50,
 #' chapter = 6,
 #' part = 648,
 #' return_tidytext = TRUE,
+#' token = "words",
 #' verbose = TRUE)
 #' head(regs)}
 #'
@@ -212,8 +227,8 @@ numextract <- function(string, return = c("min", "max")[1]){
 cfr_text <- function(year, title_number, chapter, part, token = "words", return_tidytext = TRUE,
                      verbose = FALSE, ...) {
 
-  if(!year %in% seq(1996, 2017)){
-    stop("Year must be between 1996 and 2017.\n")
+  if(!year %in% seq(1996, 2018)){
+    stop("Year must be between 1996 and 2018.\n")
   }
 
   if(!title_number %in% seq(1, 50)){
@@ -314,8 +329,9 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
            title_number = title_number,
            chapter = chapter,
            part = part,
-           TEXT = stringi::stri_trim(TEXT),
-           TEXT = stringi::stri_trans_tolower(TEXT)) %>%
+           # TEXT = stringi::stri_trim(TEXT),
+           # TEXT = stringi::stri_trans_tolower(TEXT)) %>%
+           TEXT = tolower(TEXT)) %>%
     dplyr::rename(subpart = subpart_names)
 
   if(return_tidytext){

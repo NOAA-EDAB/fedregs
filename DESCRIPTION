@@ -1,7 +1,7 @@
 Package: fedregs
 Type: Package
 Title: Text Analysis of the US Code of Federal Regulations
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: person("Scott", "Large", email = "scott.large@noaa.gov", role = c("cre", "aut"))
 Description: The Code of Federal Regulations (CFR) annual edition is the codification 
     of the general and permanent rules published in the Federal Register by the departments
@@ -31,4 +31,4 @@ Suggests:
     ggplot2 (>= 2.2.1),
     tidyr (>= 0.8.0),
     testthat (>= 2.0.0)
-RoxygenNote: 6.0.1
+RoxygenNote: 6.1.0
