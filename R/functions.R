@@ -286,6 +286,10 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
     xml2::xml_text(.) %>%
     unlist()
 
+  if(length(subpart_names) == 0L){
+    stop("Check that ", cfr_select_part$url, " has the proper XML format.")
+  }
+
   section_all <- dplyr::data_frame(subpart_names) %>%
     dplyr::mutate(values = purrr::map(subpart_names, function(x) xml2::xml_find_all(x = cfr_xml,
                                                               sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD[contains(text(), '%s')]/following-sibling::SECTNO",
@@ -296,6 +300,10 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
 
   cfr_subpart <- cfr_xml %>%
     xml2::xml_find_all(sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::SUBPART", part))
+
+  if(length(cfr_subpart) == 0L){
+    stop("Check that ", cfr_select_part$url, " has the proper XML format.")
+  }
 
   section_numbers <- cfr_subpart %>%
     purrr::map(~ xml2::xml_find_all(., "//SECTION/SECTNO")) %>%
