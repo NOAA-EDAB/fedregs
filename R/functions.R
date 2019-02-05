@@ -271,7 +271,22 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
                   max_parts = purrr::map(parts, numextract, "max")) %>%
     dplyr::filter(grepl(sprintf("Chapter %s", chapter), chapters),
                   min_parts <= part,
-                  max_parts > part)
+                  max_parts >= part) %>%
+    tidyr::unnest()
+
+
+  if(nrow(cfr_select_part) > 1 &
+     any(!is.infinite(cfr_select_part$max_parts))) {
+    cfr_select_part <- cfr_select_part %>%
+      dplyr::filter(!is.infinite(max_parts))
+  }
+
+  if(nrow(cfr_select_part) > 1 &
+     all(is.infinite(cfr_select_part$max_parts))) {
+    cfr_select_part <- cfr_select_part %>%
+      dplyr::filter(min_parts == max(min_parts))
+  }
+
 
   cfr_xml <- cfr_select_part %>%
     dplyr::select(url) %>%
@@ -321,8 +336,6 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
            title_number = title_number,
            chapter = chapter,
            part = part,
-           # TEXT = stringi::stri_trim(TEXT),
-           # TEXT = stringi::stri_trans_tolower(TEXT)) %>%
            TEXT = tolower(TEXT)) %>%
     dplyr::rename(subpart = subpart_names)
 
