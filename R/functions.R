@@ -25,7 +25,9 @@
 #'   head(url_list)}
 #'
 #'
-cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
+cfr_urls <- function(year, title_number,
+                     # check_url = TRUE,
+                     verbose = FALSE) {
 
   if(!year %in% seq(1996, 2018)){
     stop("Year must be between 1996 and 2018.\n")
@@ -35,6 +37,7 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
     stop("Title must be a numeric value between 1 and 50.\n")
   }
 
+  stop("Function is deprecated")
   # url_head <- "https://www.gpo.gov/fdsys/"
   # url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title_number)
   # url_list <- purrr::possibly( ~.x %>% xml2::read_html() %>%    # Try to take a URL, read it,
@@ -43,49 +46,68 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
   #                              NA)(url) %>%
   #   grep(pattern =  sprintf("title%s.*?.xml", title_number),  value = TRUE)
 
-
-  url_head <- "https://www.govinfo.gov/bulkdata/CFR"
-  url <- sprintf("%s/%s/title-%s", url_head, year, title_number)
-
-  url_list <- purrr::possibly(~.x %>% httr::GET() %>%
-                                httr::content(as = "text", encoding = "utf-8") %>%
-                                xml2::read_xml() %>%
-                                xml2::xml_find_all(".//displayLabel") %>%
-                                xml2::xml_text(),
-                              NA)(url)
-
-  ## remove the zip files
-  url_list <- url_list[!grepl("*.zip", url_list)]
-  ## remove NAs
-  url_list <- url_list[!is.na(url_list)]
-
-  url_df <- data.frame(URL = sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list),
-                       stringsAsFactors = FALSE)
-
-  Sys.sleep(sample(seq(1, 3, by = 0.001), 1))
-
-  if(nrow(url_df) != 0) {
-    if(check_url == TRUE){
-      url_df$STATUS <- sapply(url_df$URL, httr::http_error, httr::config(followlocation = 0L), USE.NAMES = FALSE)
-      if(any(url_df$STATUS == TRUE)){
-        if(verbose){
-          message("The following urls result in an http error:", url_df$URL[url_df$STATUS == TRUE])
-        }
-      }
-      if(all(url_df$STATUS == FALSE)) {
-        if(verbose){
-          message(sprintf("All urls for title %s in %s should be fine.\n", title_number, year))
-        }
-      }
-    }
-    return(as.character(url_df$URL))
-  }
-  if(nrow(url_df) == 0){
-    if(verbose){
-      message(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
-    }
-    return(NA)
-  }
+#
+#   url_head <- "https://www.govinfo.gov/bulkdata/CFR"
+#   url <- sprintf("%s/%s/title-%s", url_head, year, title_number)
+#
+#   url_list <- purrr::possibly(~.x %>% httr::GET() %>%
+#                                 httr::content(as = "text", encoding = "utf-8") %>%
+#                                 xml2::read_xml() %>%
+#                                 xml2::xml_find_all(".//displayLabel") %>%
+#                                 xml2::xml_text(),
+#                               NA)(url)
+#
+#   ## remove the zip files
+#   # url_list <- url_list[!grepl("*.zip", url_list)]
+#   url_list <- url_list[grepl("*.zip", url_list)]
+#   url_zip <- sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list)
+#
+#   temp_dir <- tempdir()
+#   temp <- tempfile(tmpdir = temp_dir)
+#   download.file(url_zip, temp)
+#   # path_df <- data.frame(file_path = utils::unzip(temp, list = TRUE)$Name,
+#   #                      stringsAsFactors = FALSE)
+#   #
+#   ## Now check the file to find the right volume
+#   unzip(temp, exdir = temp_dir)
+#
+#
+#   path_df <- data.frame(file_path = grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE),
+#                     stringsAsFactors = FALSE)
+#
+#
+#   tt <- purrr::map_df(path_df$file_path, cfr_part, verbose = TRUE)
+#
+#   ## remove NAs
+#   # url_list <- url_list[!is.na(url_list)]
+# #
+# #   url_df <- data.frame(URL = sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list),
+# #                        stringsAsFactors = FALSE)
+#
+#   # Sys.sleep(sample(seq(1, 3, by = 0.001), 1))
+#
+#   if(nrow(url_df) != 0) {
+#     # if(check_url == TRUE){
+#     #   url_df$STATUS <- sapply(url_df$URL, httr::http_error, httr::config(followlocation = 0L), USE.NAMES = FALSE)
+#     #   if(any(url_df$STATUS == TRUE)){
+#     #     if(verbose){
+#     #       message("The following urls result in an http error:", url_df$URL[url_df$STATUS == TRUE])
+#     #     }
+#     #   }
+#     #   if(all(url_df$STATUS == FALSE)) {
+#     #     if(verbose){
+#     #       message(sprintf("All urls for title %s in %s should be fine.\n", title_number, year))
+#     #     }
+#     #   }
+#     # }
+#     return(as.character(url_df$URL))
+#   }
+#   if(nrow(url_df) == 0){
+#     if(verbose){
+#       message(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
+#     }
+#     return(NA)
+#   }
 }
 
 
@@ -107,44 +129,47 @@ cfr_urls <- function(year, title_number, check_url = TRUE, verbose = FALSE) {
 #' cfr_part(part_vec[1])}
 #'
 #'
-cfr_part <- function(url, verbose = FALSE){
 
-  ## add a better test ##
-  if(is.na(url)){
-    stop("NA is not a valid url.")
-  }
+cfr_part <- function(file_path, verbose = FALSE){
 
-  if(httr::http_error(httr::GET(url))){
-    stop("The URL is not valid.")
-  }
+  # ## add a better test ##
+  # if(!file.exists(url)){
+  #   stop("NA is not a valid url.")
+  # }
+  #
+  # if(httr::http_error(httr::GET(url))){
+  #   stop("The URL is not valid.")
+  # }
 
-  res <- httr::GET(url)
-  parts <- httr::content(res, as = "parsed", encoding = "UTF-8") %>%
+  res <- xml2::read_xml(file_path, as = "parsed", encoding = "UTF-8")
+
+  # res <- httr::GET(url)
+  parts <- res %>% #httr::content(res, as = "parsed", encoding = "UTF-8") %>%
     xml2::xml_find_all(sprintf("FMTR/TITLEPG/PARTS")) %>%
     xml2::xml_text()
 
-  chapters <- httr::content(res, as = "parsed", encoding = "UTF-8") %>%
+  chapters <- res %>%  #httr::content(res, as = "parsed", encoding = "UTF-8") %>%
     xml2::xml_find_all(sprintf("FMTR/TOC/TITLENO/CHAPTI/SUBJECT")) %>%
     xml2::xml_text()
 
   if(length(chapters) == 0){
-    chapters <- httr::content(res, as = "parsed", encoding = "UTF-8") %>%
+    chapters <- res %>% #httr::content(res, as = "parsed", encoding = "UTF-8") %>%
       xml2::xml_find_all(sprintf("TOC/TITLENO/CHAPTI/SUBJECT")) %>%
       xml2::xml_text()
   }
 
-  Sys.sleep(sample(seq(1, 3, by = 0.001), 1))
+  # Sys.sleep(sample(seq(1, 3, by = 0.001), 1))
 
   if(verbose) {
-    message(sprintf("Pulling the chapter, part, and volume information from:\n%s.\n", url))
+    message(sprintf("Pulling the chapter, part, and volume information from:\n%s.\n", file_path))
   }
 
-  return(data.frame(year = as.numeric(gsub(".*CFR-(.*)-title(.*)-vol(.*).xml", "\\1", url)),
-                    title = as.numeric(gsub(".*CFR-(.*)-title(.*)-vol(.*).xml", "\\2", url)),
-                    vol = as.numeric(gsub(".*CFR-(.*)-title(.*)-vol(.*).xml", "\\3", url)),
+  return(data.frame(year = as.numeric(gsub(".*CFR-(.*)-title(.*)-vol(.*).xml", "\\1", file_path)),
+                    title = as.numeric(gsub(".*CFR-(.*)-title(.*)-vol(.*).xml", "\\2", file_path)),
+                    vol = as.numeric(gsub(".*CFR-(.*)-title(.*)-vol(.*).xml", "\\3", file_path)),
                     chapters = chapters,
                     parts = parts,
-                    url = url,
+                    file_path = file_path,
                     stringsAsFactors = FALSE))
 }
 
@@ -250,20 +275,53 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
     stop("For ngram tokens, please include the 'n' argument.")
   }
 
-  cfr_url_list <- cfr_urls(year = year,
-                           title_number = title_number,
-                           check_url = TRUE,
-                           verbose = verbose)
 
-  if(all(is.na(cfr_url_list) == TRUE)){
+  # cfr_url_list <- cfr_urls(year = year,
+  #                          title_number = title_number,
+  #                          check_url = TRUE,
+  #                          verbose = verbose)
+  #
+
+  url_head <- "https://www.govinfo.gov/bulkdata/CFR"
+  url_zip <- sprintf("%s/%s/title-%s/CFR-%s-title-%s.zip", url_head, year, title_number, year, title_number)
+
+  if(httr::http_error(url_zip)){
     stop(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
   }
 
-  cfr_part_df<- dplyr::data_frame(all_cfr =
-                                    purrr::map(cfr_url_list,
-                                               purrr::possibly(~ cfr_part(., verbose),
-                                                               otherwise = NA,
-                                                               quiet = FALSE)))
+
+  # url_list <- purrr::possibly(~.x %>% httr::GET() %>%
+  #                               httr::content(as = "text", encoding = "utf-8") %>%
+  #                               xml2::read_xml() %>%
+  #                               xml2::xml_find_all(".//displayLabel") %>%
+  #                               xml2::xml_text(),
+  #                             NA)(url)
+  #
+  # if(length(url_list) == 0){
+  #   stop(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
+  # }
+
+  ## Select the zip files
+  # url_list <- url_list[grepl("*.zip", url_list)]
+  # url_zip <- sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list)
+
+  temp_dir <- tempdir()
+  temp <- tempfile(tmpdir = temp_dir)
+  download.file(url_zip, temp, quiet = !verbose)
+
+  ## Now check the file to find the right volume
+  unzip(temp, exdir = temp_dir)
+  paths <- grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE)
+  paths <- grep(sprintf("*CFR-%s-title%s", year, title_number), paths, value = TRUE)
+
+  cfr_part_df <- purrr::map_df(paths, cfr_part, verbose = verbose)
+
+#
+#   cfr_part_df<- dplyr::data_frame(all_cfr =
+#                                     purrr::map(cfr_url_list,
+#                                                purrr::possibly(~ cfr_part(., verbose),
+#                                                                otherwise = NA,
+#                                                                quiet = FALSE)))
 
   cfr_select_part <- cfr_part_df %>%
     tidyr::unnest() %>%
@@ -289,11 +347,11 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
 
 
   cfr_xml <- cfr_select_part %>%
-    dplyr::select(url) %>%
+    dplyr::select(file_path) %>%
     dplyr::pull() %>%
-    httr::GET() %>%
-    httr::content(as = "text", encoding = "UTF-8") %>%
-    xml2::read_xml()
+    # httr::GET() %>%
+    # httr::content(as = "text", encoding = "UTF-8") %>%
+    xml2::read_xml(as = "text", encoding = "UTF-8")
 
   subpart_names <- cfr_xml %>%
     xml2::xml_find_all(sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD",
@@ -331,7 +389,7 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
     dplyr::mutate(TEXT = purrr::map(SECTION_NUMBER, function(x) xml2::xml_find_all(cfr_subpart,
                                                                             sprintf("//SECTNO[text()='%s']/following-sibling::P",
                                                                                     x)) %>%
-                               xml2::xml_text(.)),
+                               xml2::xml_text(., trim = TRUE)),
            year = year,
            title_number = title_number,
            chapter = chapter,
@@ -339,7 +397,8 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
            TEXT = tolower(TEXT)) %>%
     dplyr::rename(subpart = subpart_names)
 
-  if(return_tidytext){
+
+    if(return_tidytext){
     out <- section_text %>%
              tidytext::unnest_tokens(word, TEXT, token, ...) %>%
              dplyr::group_by(year, title_number, chapter, part, subpart) %>%
