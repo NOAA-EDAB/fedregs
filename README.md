@@ -3,7 +3,7 @@
 'fedregs': Text Analysis of the US Code of Federal Regulations
 --------------------------------------------------------------
 
-[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active) [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs) [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs) [![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) ![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)
+[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active) [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs) [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs) <!-- [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) --> <!-- [![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs) -->
 
 The goal of `fedregs` is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go).
 
@@ -14,13 +14,13 @@ You can install `fedregs` using:
 
 ``` r
 install.packages("fedregs")
-# Or: devtools::install_github("slarge/fedregs", ref = "cran-prep")
+# Or: devtools::install_github("slarge/fedregs")
 ```
 
 Example
 -------
 
-The [Code of Federal Regulation](https://www.gpo.gov/help/index.html#about_code_of_federal_regulations.htm) is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it will return the text for a specified part, including the associated subparts and sections. Behind the scenes, `cfr_text()` and associated helper functions gather the URLs for a given title/year combination and parses XML to determine the chapters, parts, and subparts associated with each volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format. If *ngrams* are your game, set `token = "ngrams"` and specify `n`.
+The [Code of Federal Regulation](https://www.gpo.gov/help/index.html#about_code_of_federal_regulations.htm) is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it will return the text for a specified part, including the associated subparts and sections. Behind the scenes, `cfr_text()` and associated helper functions gather the volumes for a given title/year combination and parses XML to determine the chapters, parts, and subparts associated with each volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format. If *ngrams* are your game, set `token = "ngrams"` and specify `n`.
 
 ``` r
 library(fedregs)
@@ -37,25 +37,24 @@ regs <- cfr_text(year = 2017,
                  #n = 2, # uncomment for ngrams of length 2
                  return_tidytext = TRUE,
                  verbose = FALSE)
-## Warning in stri_trim_both(str, pattern): argument is not an atomic vector;
-## coercing
 head(regs)
 ## # A tibble: 6 x 6
-##    year title_number chapter  part subpart                       data      
-##   <dbl>        <dbl> <chr>   <dbl> <chr>                         <list>    
-## 1  2017           50 VI        648 Subpart A—General Provisions  <tibble [~
-## 2  2017           50 VI        648 Subpart B—Management Measure~ <tibble [~
-## 3  2017           50 VI        648 Subpart C—Management Measure~ <tibble [~
-## 4  2017           50 VI        648 Subpart D—Management Measure~ <tibble [~
-## 5  2017           50 VI        648 <NA>                          <tibble [~
-## 6  2017           50 VI        648 Subpart E—Management Measure~ <tibble [~
+## # Groups:   subpart, year, title_number, chapter, part [6]
+##   subpart                      year title_number chapter  part         data
+##   <chr>                       <dbl>        <dbl> <chr>   <dbl> <list<df[,4>
+## 1 Subpart A—General Provisio~  2017           50 VI        648 [84,596 x 4]
+## 2 Subpart B—Management Measu~  2017           50 VI        648 [10,384 x 4]
+## 3 Subpart C—Management Measu~  2017           50 VI        648    [696 x 4]
+## 4 Subpart D—Management Measu~  2017           50 VI        648 [25,567 x 4]
+## 5 Subpart E—Management Measu~  2017           50 VI        648  [6,994 x 4]
+## 6 Subpart F—Management Measu~  2017           50 VI        648 [97,477 x 4]
 ```
 
 Now, we can unnest the tibble and take a peek at the data to see what data we have to play with.
 
 ``` r
 regs %>%
-  unnest() %>% head(20) %>% pull(word)
+  unnest(cols = c(data)) %>% head(20) %>% pull(word)
 ##  [1] "c"          "a"          "this"       "part"       "implements"
 ##  [6] "the"        "fishery"    "management" "plans"      "fmps"      
 ## [11] "for"        "the"        "atlantic"   "mackerel"   "squid"     
@@ -73,9 +72,11 @@ There are some other messes like punctuation, numbers, *i*ths, Roman Numerals, w
 
 ``` r
 stop_words <- data_frame(word = stopwords("english"))
+## Warning: `data_frame()` is deprecated, use `tibble()`.
+## This warning is displayed once per session.
 
 clean_words <- regs %>%
-  unnest() %>% 
+  unnest(cols = c(data)) %>% 
   mutate(word = gsub("[[:punct:]]", "", word), # remove any remaining punctuation
                 word = gsub("^[[:digit:]]*", "", word)) %>%  # remove digits (e.g., 1st, 1881a, 15th, etc)
   anti_join(stop_words, by = "word") %>%  # remove "stop words"
@@ -87,16 +88,46 @@ clean_words <- regs %>%
   mutate(word = tokens(word),
                 word = as.character(tokens_wordstem(word)))
 ## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
+
+## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
 head(clean_words)
 ## # A tibble: 6 x 9
-##    year title_number chapter  part subpart SECTION_NAME SECTION_NUMBER
-##   <dbl>        <dbl> <chr>   <dbl> <chr>   <chr>        <chr>         
-## 1  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
-## 2  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
-## 3  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
-## 4  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
-## 5  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
-## 6  2017           50 VI        648 Subpar~ Purpose and~ §<U+2009>648.1       
+## # Groups:   subpart, year, title_number, chapter, part [1]
+##   subpart  year title_number chapter  part SECTION_NAME SECTION_NUMBER
+##   <chr>   <dbl>        <dbl> <chr>   <dbl> <chr>        <chr>         
+## 1 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
+## 2 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
+## 3 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
+## 4 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
+## 5 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
+## 6 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
 ## # ... with 2 more variables: values <chr>, word <chr>
 ```
 
