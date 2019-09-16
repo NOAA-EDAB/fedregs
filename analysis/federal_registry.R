@@ -1,7 +1,7 @@
 # devtools::install_github("slarge/fedregs")
 # install.packages("federalregister")
 library(dplyr)
-# library(federalregister)
+#library(federalregister)
 library(fedregs)
 library(httr)
 
