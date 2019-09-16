@@ -22,10 +22,4 @@ numextract
 
 Each CFR chapter has multiple parts that often span volumes. To facilitate targeting a specific part, it's necessary to evaluate which parts are in each volume (e.g., Parts 18 to 199). The CFR sometimes uses terms like "END" or "end" to denote the maximum part in each chapter. \code{numextract} simply returns the max as `Inf` in these situations.
 }
-\examples{
-\donttest{part_vec <- cfr_urls(year = 2017, title_number = 50)
-parts <- cfr_part(part_vec[1])
-numextract(parts$parts, return = "max")}
-
-}
 \keyword{internal}

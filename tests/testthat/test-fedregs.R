@@ -1,82 +1,82 @@
 context("test-fedregs.R")
 
-test_that("We get the best CFR URLs.", {
-
-  good_year <- 2000
-  good_title_number <- 15
-
-  bad_year <- 1993
-  bad_title_number <- 55
-
-  na_year <- 1996
-  na_title_number <- 1
-
-  testthat::expect_error(cfr_urls(year = bad_year,
-                          title_number = good_title_number,
-                            check_url = TRUE), "Year must be between 1996 and 2018.\n")
-
-  testthat::expect_error(cfr_urls(year = good_year,
-                          title_number = bad_title_number,
-                          check_url = TRUE), "Title must be a numeric value between 1 and 50.\n")
-
-  testthat::expect_message(cfr_urls(year = na_year,
-                            title_number = na_title_number,
-                            verbose = TRUE,
-                            check_url = FALSE), sprintf("There aren't any regulations for title %s in %s.",
-                                                        na_title_number,
-                                                        na_year))
-
-  testthat::expect_true(is.na(cfr_urls(year = na_year,
-                         title_number = na_title_number,
-                         verbose = FALSE,
-                         check_url = FALSE)))
-
-    cfr <- cfr_urls(year = good_year,
-                    title_number = good_title_number,
-                    check_url = FALSE)
-
-    testthat::expect_true(all(grepl("*..xml$", cfr)))
-    testthat::expect_true(is.character(cfr))
-
-})
-
-test_that("We can parse some parts.", {
-
-  good_year <- 2000
-  good_title_number <- 15
-
-  bad_year <- 1993
-  bad_title_number <- 55
-
-  na_year <- 1996
-  na_title_number <- 1
-
-  na_url <- cfr_urls(year = na_year, title_number = na_title_number)
-  good_url <- cfr_urls(year = good_year, title_number = good_title_number)[1]
-  bad_url <- sprintf("https://www.gpo.gov/fdsys/bulkdata/CFR/%s/title-%s/CFR-%s-title%s-vol1.xml",
-                     bad_year,
-                     bad_title_number,
-                     bad_year,
-                     bad_title_number)
-
-  testthat::expect_error(cfr_part(bad_url), "The URL is not valid.")
-
-  testthat::expect_error(cfr_part(na_url), "NA is not a valid url.")
-
-  testthat::expect_message(cfr_part(good_url,
-                          verbose = TRUE),
-                 sprintf("Pulling the chapter, part, and volume information from:\n%s.\n",
-                         good_url))
-
-  good_part <- cfr_part(good_url)
-
-  testthat::expect_true(is.data.frame(good_part))
-  testthat::expect_true(good_url == unique(good_part$url))
-  testthat::expect_true(good_year == unique(good_part$year))
-  testthat::expect_true(good_title_number == unique(good_part$title))
-  testthat::expect_true(all(grepl("*..xml$", good_part$url)))
-
-})
+# test_that("We get the best CFR URLs.", {
+#
+#   good_year <- 2000
+#   good_title_number <- 15
+#
+#   bad_year <- 1993
+#   bad_title_number <- 55
+#
+#   na_year <- 1996
+#   na_title_number <- 1
+#
+#   testthat::expect_error(cfr_urls(year = bad_year,
+#                           title_number = good_title_number,
+#                             check_url = TRUE), "Year must be between 1996 and 2018.\n")
+#
+#   testthat::expect_error(cfr_urls(year = good_year,
+#                           title_number = bad_title_number,
+#                           check_url = TRUE), "Title must be a numeric value between 1 and 50.\n")
+#
+#   testthat::expect_message(cfr_urls(year = na_year,
+#                             title_number = na_title_number,
+#                             verbose = TRUE,
+#                             check_url = FALSE), sprintf("There aren't any regulations for title %s in %s.",
+#                                                         na_title_number,
+#                                                         na_year))
+#
+#   testthat::expect_true(is.na(cfr_urls(year = na_year,
+#                          title_number = na_title_number,
+#                          verbose = FALSE,
+#                          check_url = FALSE)))
+#
+#     cfr <- cfr_urls(year = good_year,
+#                     title_number = good_title_number,
+#                     check_url = FALSE)
+#
+#     testthat::expect_true(all(grepl("*..xml$", cfr)))
+#     testthat::expect_true(is.character(cfr))
+#
+# })
+#
+# test_that("We can parse some parts.", {
+#
+#   good_year <- 2000
+#   good_title_number <- 15
+#
+#   bad_year <- 1993
+#   bad_title_number <- 55
+#
+#   na_year <- 1996
+#   na_title_number <- 1
+#
+#   na_url <- cfr_urls(year = na_year, title_number = na_title_number)
+#   good_url <- cfr_urls(year = good_year, title_number = good_title_number)[1]
+#   bad_url <- sprintf("https://www.gpo.gov/fdsys/bulkdata/CFR/%s/title-%s/CFR-%s-title%s-vol1.xml",
+#                      bad_year,
+#                      bad_title_number,
+#                      bad_year,
+#                      bad_title_number)
+#
+#   testthat::expect_error(cfr_part(bad_url), "The URL is not valid.")
+#
+#   testthat::expect_error(cfr_part(na_url), "NA is not a valid url.")
+#
+#   testthat::expect_message(cfr_part(good_url,
+#                           verbose = TRUE),
+#                  sprintf("Pulling the chapter, part, and volume information from:\n%s.\n",
+#                          good_url))
+#
+#   good_part <- cfr_part(good_url)
+#
+#   testthat::expect_true(is.data.frame(good_part))
+#   testthat::expect_true(good_url == unique(good_part$url))
+#   testthat::expect_true(good_year == unique(good_part$year))
+#   testthat::expect_true(good_title_number == unique(good_part$title))
+#   testthat::expect_true(all(grepl("*..xml$", good_part$url)))
+#
+# })
 
 test_that("We can extract some numbers.", {
 
@@ -145,6 +145,6 @@ test_that("We can go all the way", {
   good_text <- cfr_text(good_year, good_title_number, good_chapter, good_part)
 
 
-  testthat::expect_true(all(class(good_text) %in% c("tbl", "tbl_df", "data.frame") == TRUE))
+  testthat::expect_true(all(class(good_text) %in% c("grouped_df", "tbl", "tbl_df", "data.frame") == TRUE))
 
 })

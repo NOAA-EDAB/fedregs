@@ -1,164 +1,34 @@
-#' cfr_urls
-#'
-#' @title URLs for .xml Code of Federal Regulations.
-#'
-#' @description \code{cfr_urls} returns a character string of valid URLs associated with a year and CFR title.
-#'
-#' @details The Code of Federal Regulations (CFR) is divided into titles, chapters, parts, subparts, and sections. Each title within the CFR is divided into volumes. Unfortunately, each chapter isn't consistently in the same volume so \code{cfr_urls} function scrapes up all the valid URLs for a given title/year combination.
-#'
-#' @param year numeric (YYYY) between 1996 and 2018.
-#' @param title_number numeric between 1 and 50.
-#' @param check_url logical. Should the URLs be tested using \code{httr::http:error()}.
-#' @param verbose logical. Will return "helpful" messages regarding the status of the URL.
-#'
-#' @return Valid URLs are returned as a vector of character strings. Invalid URLs are returned as `NA`'s.
-#' @export
-#' @importFrom magrittr %>%
-#'
-#' @examples
-#' \donttest{library(dplyr)
-#' url_list <- expand.grid(years = 2015:2018,
-#'   title = 50,
-#'   KEEP.OUT.ATTRS = FALSE,
-#'   stringsAsFactors = FALSE) %>%
-#'   mutate(url = purrr::map2(years, title, cfr_urls, check_url = TRUE))
-#'   head(url_list)}
-#'
-#'
-cfr_urls <- function(year, title_number,
-                     # check_url = TRUE,
-                     verbose = FALSE) {
-
-  if(!year %in% seq(1996, 2018)){
-    stop("Year must be between 1996 and 2018.\n")
-  }
-
-  if(!title_number %in% seq(1, 50)){
-    stop("Title must be a numeric value between 1 and 50.\n")
-  }
-
-  stop("Function is deprecated")
-  # url_head <- "https://www.gpo.gov/fdsys/"
-  # url <- sprintf("%s/bulkdata/CFR/%s/title-%s", url_head, year, title_number)
-  # url_list <- purrr::possibly( ~.x %>% xml2::read_html() %>%    # Try to take a URL, read it,
-  #                                rvest::html_nodes('a') %>%
-  #                                rvest::html_attr("href"),
-  #                              NA)(url) %>%
-  #   grep(pattern =  sprintf("title%s.*?.xml", title_number),  value = TRUE)
-
-#
-#   url_head <- "https://www.govinfo.gov/bulkdata/CFR"
-#   url <- sprintf("%s/%s/title-%s", url_head, year, title_number)
-#
-#   url_list <- purrr::possibly(~.x %>% httr::GET() %>%
-#                                 httr::content(as = "text", encoding = "utf-8") %>%
-#                                 xml2::read_xml() %>%
-#                                 xml2::xml_find_all(".//displayLabel") %>%
-#                                 xml2::xml_text(),
-#                               NA)(url)
-#
-#   ## remove the zip files
-#   # url_list <- url_list[!grepl("*.zip", url_list)]
-#   url_list <- url_list[grepl("*.zip", url_list)]
-#   url_zip <- sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list)
-#
-#   temp_dir <- tempdir()
-#   temp <- tempfile(tmpdir = temp_dir)
-#   download.file(url_zip, temp)
-#   # path_df <- data.frame(file_path = utils::unzip(temp, list = TRUE)$Name,
-#   #                      stringsAsFactors = FALSE)
-#   #
-#   ## Now check the file to find the right volume
-#   unzip(temp, exdir = temp_dir)
-#
-#
-#   path_df <- data.frame(file_path = grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE),
-#                     stringsAsFactors = FALSE)
-#
-#
-#   tt <- purrr::map_df(path_df$file_path, cfr_part, verbose = TRUE)
-#
-#   ## remove NAs
-#   # url_list <- url_list[!is.na(url_list)]
-# #
-# #   url_df <- data.frame(URL = sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list),
-# #                        stringsAsFactors = FALSE)
-#
-#   # Sys.sleep(sample(seq(1, 3, by = 0.001), 1))
-#
-#   if(nrow(url_df) != 0) {
-#     # if(check_url == TRUE){
-#     #   url_df$STATUS <- sapply(url_df$URL, httr::http_error, httr::config(followlocation = 0L), USE.NAMES = FALSE)
-#     #   if(any(url_df$STATUS == TRUE)){
-#     #     if(verbose){
-#     #       message("The following urls result in an http error:", url_df$URL[url_df$STATUS == TRUE])
-#     #     }
-#     #   }
-#     #   if(all(url_df$STATUS == FALSE)) {
-#     #     if(verbose){
-#     #       message(sprintf("All urls for title %s in %s should be fine.\n", title_number, year))
-#     #     }
-#     #   }
-#     # }
-#     return(as.character(url_df$URL))
-#   }
-#   if(nrow(url_df) == 0){
-#     if(verbose){
-#       message(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
-#     }
-#     return(NA)
-#   }
-}
-
-
 #' cfr_part
 #'
-#' @title Parse the Relevant Details for CFR urls.
-#' @description \code{cfr_part} returns a data_frame year, title, volume, chapters, parts, and URL for each url
+#' @title Parse the Relevant Details for CFR xml files
+#' @description \code{cfr_part} returns a data_frame year, title, volume, chapters, parts, and file path for each xml file
 #' @details Since we're after more refined data than a single volume, we need to figure out what chapters and parts are associated with each volume. This function parses the xml and scrapes the Table of Contents for the information held in each volume.
 #'
-#' @param url A valid url for .xml CFR volumes. Ideally, from \code{cfr_urls}.
-#' @param verbose logical. Will return "helpful" messages regarding the status of the URL.
+#' @param verbose logical. Will return "helpful" messages regarding the status of the file path.
+#' @param file_path file path coming from the bulk download
 #'
-#' @return Numeric (year, title, volume, and chapters) and characters (parts and URL).
-#' @export
+#' @return Numeric (year, title, volume, and chapters) and characters (parts and file path).
 #' @importFrom magrittr %>%
-#'
-#' @examples
-#' \donttest{part_vec <- cfr_urls(year = 2018, title_number = 50)
-#' cfr_part(part_vec[1])}
-#'
+#' @keywords internal
 #'
 
 cfr_part <- function(file_path, verbose = FALSE){
 
-  # ## add a better test ##
-  # if(!file.exists(url)){
-  #   stop("NA is not a valid url.")
-  # }
-  #
-  # if(httr::http_error(httr::GET(url))){
-  #   stop("The URL is not valid.")
-  # }
-
   res <- xml2::read_xml(file_path, as = "parsed", encoding = "UTF-8")
 
-  # res <- httr::GET(url)
-  parts <- res %>% #httr::content(res, as = "parsed", encoding = "UTF-8") %>%
-    xml2::xml_find_all(sprintf("FMTR/TITLEPG/PARTS")) %>%
+  parts <- res %>%
+    xml2::xml_find_all(".//FMTR/TITLEPG/PARTS") %>%
     xml2::xml_text()
 
-  chapters <- res %>%  #httr::content(res, as = "parsed", encoding = "UTF-8") %>%
-    xml2::xml_find_all(sprintf("FMTR/TOC/TITLENO/CHAPTI/SUBJECT")) %>%
+  chapters <- res %>%
+    xml2::xml_find_all(".//FMTR/TOC/TITLENO/CHAPTI/SUBJECT") %>%
     xml2::xml_text()
 
   if(length(chapters) == 0){
-    chapters <- res %>% #httr::content(res, as = "parsed", encoding = "UTF-8") %>%
-      xml2::xml_find_all(sprintf("TOC/TITLENO/CHAPTI/SUBJECT")) %>%
+    chapters <- res %>%
+      xml2::xml_find_all(".//TOC/TITLENO/CHAPTI/SUBJECT") %>%
       xml2::xml_text()
   }
-
-  # Sys.sleep(sample(seq(1, 3, by = 0.001), 1))
 
   if(verbose) {
     message(sprintf("Pulling the chapter, part, and volume information from:\n%s.\n", file_path))
@@ -174,7 +44,6 @@ cfr_part <- function(file_path, verbose = FALSE){
 }
 
 
-
 #' numextract
 #'
 #' @title Extract the Part Numbers
@@ -187,13 +56,7 @@ cfr_part <- function(file_path, verbose = FALSE){
 #'
 #' @return numeric value from 1 to `Inf``
 #'
-#' @export
-#'
 #' @keywords internal
-#' @examples
-#' \donttest{part_vec <- cfr_urls(year = 2018, title_number = 50)
-#' parts <- cfr_part(part_vec[1])
-#' numextract(parts$parts, return = "max")}
 #'
 numextract <- function(string, return = c("min", "max")[1]){
 
@@ -237,6 +100,8 @@ numextract <- function(string, return = c("min", "max")[1]){
 #' @return a tibble with year, title_number, chapter, part, and text nested by subpart
 #' @export
 #' @importFrom magrittr %>%
+#' @importFrom utils download.file unzip
+#' @importFrom tidyr nest unnest
 #'
 #' @examples
 #' \donttest{regs <- cfr_text(year = 2018,
@@ -276,34 +141,12 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
   }
 
 
-  # cfr_url_list <- cfr_urls(year = year,
-  #                          title_number = title_number,
-  #                          check_url = TRUE,
-  #                          verbose = verbose)
-  #
-
   url_head <- "https://www.govinfo.gov/bulkdata/CFR"
   url_zip <- sprintf("%s/%s/title-%s/CFR-%s-title-%s.zip", url_head, year, title_number, year, title_number)
 
   if(httr::http_error(url_zip)){
     stop(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
   }
-
-
-  # url_list <- purrr::possibly(~.x %>% httr::GET() %>%
-  #                               httr::content(as = "text", encoding = "utf-8") %>%
-  #                               xml2::read_xml() %>%
-  #                               xml2::xml_find_all(".//displayLabel") %>%
-  #                               xml2::xml_text(),
-  #                             NA)(url)
-  #
-  # if(length(url_list) == 0){
-  #   stop(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
-  # }
-
-  ## Select the zip files
-  # url_list <- url_list[grepl("*.zip", url_list)]
-  # url_zip <- sprintf("%s/%s/title-%s/%s", url_head, year, title_number, url_list)
 
   temp_dir <- tempdir()
   temp <- tempfile(tmpdir = temp_dir)
@@ -316,78 +159,84 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
 
   cfr_part_df <- purrr::map_df(paths, cfr_part, verbose = verbose)
 
-#
-#   cfr_part_df<- dplyr::data_frame(all_cfr =
-#                                     purrr::map(cfr_url_list,
-#                                                purrr::possibly(~ cfr_part(., verbose),
-#                                                                otherwise = NA,
-#                                                                quiet = FALSE)))
-
   cfr_select_part <- cfr_part_df %>%
-    tidyr::unnest() %>%
     dplyr::mutate(min_parts = purrr::map(parts, numextract, "min"),
                   max_parts = purrr::map(parts, numextract, "max")) %>%
     dplyr::filter(grepl(sprintf("Chapter %s", chapter), chapters),
                   min_parts <= part,
                   max_parts >= part) %>%
-    tidyr::unnest()
+    tidyr::unnest(cols = c("min_parts", "max_parts"))
 
+
+  if(nrow(cfr_select_part) == 0){
+    stop(sprintf("Part not found. Please check that part %s is available on 'https://www.govinfo.gov/bulkdata/CFR'.\n", part))
+  }
+
+  max_parts_vector <- unlist(cfr_select_part$max_parts)
 
   if(nrow(cfr_select_part) > 1 &
-     any(!is.infinite(cfr_select_part$max_parts))) {
+    any(!is.infinite(max_parts_vector))) {
     cfr_select_part <- cfr_select_part %>%
       dplyr::filter(!is.infinite(max_parts))
   }
 
   if(nrow(cfr_select_part) > 1 &
-     all(is.infinite(cfr_select_part$max_parts))) {
+     any(is.infinite(max_parts_vector))) {
     cfr_select_part <- cfr_select_part %>%
       dplyr::filter(min_parts == max(min_parts))
   }
 
 
   cfr_xml <- cfr_select_part %>%
-    dplyr::select(file_path) %>%
+    dplyr::select(c(file_path)) %>%
     dplyr::pull() %>%
-    # httr::GET() %>%
-    # httr::content(as = "text", encoding = "UTF-8") %>%
     xml2::read_xml(as = "text", encoding = "UTF-8")
 
   subpart_names <- cfr_xml %>%
-    xml2::xml_find_all(sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD",
+    xml2::xml_find_all(sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD",
                                part)) %>%
     xml2::xml_text(.) %>%
     unlist()
 
-  section_all <- dplyr::data_frame(subpart_names) %>%
+  section_all <- dplyr::tibble(subpart_names) %>%
     dplyr::mutate(values = purrr::map(subpart_names, function(x) xml2::xml_find_all(x = cfr_xml,
-                                                              sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD[contains(text(), '%s')]/following-sibling::SECTNO",
+                                                              sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD[contains(text(), '%s')]/following-sibling::SECTNO",
                                                                       part,
                                                                       x)) %>%
                                  xml2::xml_text(.))) %>%
-    tidyr::unnest()
+    tidyr::unnest(cols = c("values"))
 
   cfr_subpart <- cfr_xml %>%
-    xml2::xml_find_all(sprintf("//PART/HD[contains(text(), '%s')]/following-sibling::SUBPART", part))
-
-  section_numbers <- cfr_subpart %>%
-    purrr::map(~ xml2::xml_find_all(., "//SECTION/SECTNO")) %>%
-    purrr::map(~ xml2::xml_text(.)) %>%
-    unlist()
+    xml2::xml_find_all(sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::SUBPART", part))
 
   section_names <- cfr_subpart %>%
-    purrr::map(~ xml2::xml_find_all(., "//SECTION/SUBJECT|//SECTION/RESERVED")) %>%
-    purrr::map(~ xml2::xml_text(.)) %>%
+    xml2::xml_find_all(".//SECTION/SUBJECT|.//SECTION/RESERVED") %>%
+    xml2::xml_text() %>%
+    unlist()
+  section_names <- section_names[!section_names == ""]
+
+  section_numbers <-  cfr_subpart %>%
+    xml2::xml_find_all(".//SECTION/SECTNO") %>%
+    xml2::xml_text() %>%
     unlist()
 
-  section_text <- dplyr::data_frame(SECTION_NAME = section_names,
-                                    SECTION_NUMBER = section_numbers,
-                                    values = gsub("[^[:digit:].]", "", section_numbers)) %>%
+  # section_numbers <- cfr_subpart %>%
+  #   purrr::map(~ xml2::xml_find_all(., "//SECTION/SECTNO")) %>%
+  #   purrr::map(~ xml2::xml_text(.)) %>%
+  #   unlist()
+  #
+  # section_names <- cfr_subpart %>%
+  #   purrr::map(~ xml2::xml_find_all(., "//SECTION/SUBJECT|//SECTION/RESERVED")) %>%
+  #   purrr::map(~ xml2::xml_text(.)) %>%
+  #   unlist()
+
+  section_text <- dplyr::tibble(SECTION_NAME = section_names,
+                                SECTION_NUMBER = section_numbers,
+                                values = gsub(".*\u00A7|.*\u2009|.*\\s", "", section_numbers)) %>%
     dplyr::filter(grepl(sprintf("%s[\\.]", part), SECTION_NUMBER)) %>%
-    dplyr::distinct() %>%
     dplyr::left_join(section_all, by = "values") %>%
     dplyr::mutate(TEXT = purrr::map(SECTION_NUMBER, function(x) xml2::xml_find_all(cfr_subpart,
-                                                                            sprintf("//SECTNO[text()='%s']/following-sibling::P",
+                                                                            sprintf(".//SECTNO[text()='%s']/following-sibling::P",
                                                                                     x)) %>%
                                xml2::xml_text(., trim = TRUE)),
            year = year,
