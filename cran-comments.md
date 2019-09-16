@@ -1,3 +1,21 @@
+## Test environments (fedregs version 1.0.0)
+* local Windows 7 x64 build 7601 SP1, R version 3.6.1 (2019-07-05)
+* r_hub() Windows Server 2008 R2 SP1, R-devel, 32/64 bit
+* r_hub()Ubuntu Linux 16.04 LTS, R-release, GCC
+* r_hub()Fedora Linux, R-devel, clang, gfortran
+* ubuntu 16.04.6 (on travis-ci), R 3.6.1
+* win-builder (devel)
+
+## R CMD check results
+The previous version failed because of a breaking change with tidyr::nest and tidyr::unnest (tidyr >= 1.0.0). The code was updated to function as expected with these new changes.
+There were no ERRORs, WARNINGS, or NOTEs in R 3.6.1 or R-devel on the first 5 systems.
+
+On win-builder (devel) there was 1 ERROR
+Package required and available but unsuitable version: 'tidyr'
+This update to fedregs is in response to the update to tidyr, so this should be expected, and I am depending on the improved version.
+
+## Corrections/Comments:
+
 ## Test environments (fedregs version 0.1.1)
 * local Windows 7 x64 build 7601 SP1, R 3.5.0
 * ubuntu 14.04.05 (on travis-ci), R 3.5.0
