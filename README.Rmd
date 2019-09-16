@@ -13,8 +13,8 @@ knitr::opts_chunk$set(collapse=TRUE, comment="##", fig.retina=2, fig.path = "REA
 [![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active)
 [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs)
 [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs)
-[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs)
-![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)
+<!-- [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) -->
+<!-- [![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs) -->
 
 The goal of `fedregs` is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go). 
 
@@ -24,12 +24,12 @@ You can install `fedregs` using:
 
 ```{r gh-installation, eval = FALSE}
 install.packages("fedregs")
-# Or: devtools::install_github("slarge/fedregs", ref = "cran-prep")
+# Or: devtools::install_github("slarge/fedregs")
 ```
 
 ## Example
 
-The [Code of Federal Regulation](https://www.gpo.gov/help/index.html#about_code_of_federal_regulations.htm) is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it will return the text for a specified part, including the associated subparts and sections. Behind the scenes, `cfr_text()` and associated helper functions gather the URLs for a given title/year combination and parses XML to determine the chapters, parts, and subparts associated with each volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format. If *ngrams* are your game, set `token = "ngrams"` and specify `n`.
+The [Code of Federal Regulation](https://www.gpo.gov/help/index.html#about_code_of_federal_regulations.htm) is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it will return the text for a specified part, including the associated subparts and sections. Behind the scenes, `cfr_text()` and associated helper functions gather the volumes for a given title/year combination and parses XML to determine the chapters, parts, and subparts associated with each volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format. If *ngrams* are your game, set `token = "ngrams"` and specify `n`.
 
 ```{r get_regs, echo = TRUE, message = FALSE}
 library(fedregs)
@@ -52,7 +52,7 @@ head(regs)
 Now, we can unnest the tibble and take a peek at the data to see what data we have to play with.
 ```{r peek_data, echo = TRUE}
 regs %>%
-  unnest() %>% head(20) %>% pull(word)
+  unnest(cols = c(data)) %>% head(20) %>% pull(word)
 ```
 
 Not entirely unexpected, but there are quite a few common words that don't mean anything. These "stop words" typically don't have important significance and and are filtered out from search queries.
@@ -63,11 +63,11 @@ head(stopwords("english"))
 
 There are some other messes like punctuation, numbers, *i*ths, Roman Numerals, web sites, and random letters (probably from indexed lists) that can be removed with some simple regex-ing. We can also convert the raw words to word stems to further aggregate our data.
 
-```{r cleaning_words, echo = TRUE, warnings = FALSE}
+```{r cleaning_words, echo = TRUE, warnings = FALSE, message=FALSE}
 stop_words <- data_frame(word = stopwords("english"))
 
 clean_words <- regs %>%
-  unnest() %>% 
+  unnest(cols = c(data)) %>% 
   mutate(word = gsub("[[:punct:]]", "", word), # remove any remaining punctuation
                 word = gsub("^[[:digit:]]*", "", word)) %>%  # remove digits (e.g., 1st, 1881a, 15th, etc)
   anti_join(stop_words, by = "word") %>%  # remove "stop words"
