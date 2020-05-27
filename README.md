@@ -6,9 +6,9 @@
 [![Project Status: Active - The project has reached a stable, usable
 state and is being actively
 developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active)
-[![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs)
+[![codecov](https://codecov.io/gh/NOAA-EDAB/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/NOAA-EDAB/fedregs)
 [![Travis-CI Build
-Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs)
+Status](https://travis-ci.org/NOAA-EDAB/fedregs.svg?branch=master)](https://travis-ci.org/NOAA-EDAB/fedregs)
 [![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs)
 ![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)
 
