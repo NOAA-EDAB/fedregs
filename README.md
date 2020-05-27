@@ -1,26 +1,47 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-'fedregs': Text Analysis of the US Code of Federal Regulations
---------------------------------------------------------------
 
-[![Project Status: Active - The project has reached a stable, usable state and is being actively developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active) [![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs) [![Travis-CI Build Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs) <!-- [![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs) --> <!-- [![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs) -->
+## ‘fedregs’: Text Analysis of the US Code of Federal Regulations
 
-The goal of `fedregs` is to allow for easy exploration and analysis of the [Code of Federal Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go).
+[![Project Status: Active - The project has reached a stable, usable
+state and is being actively
+developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repostatus.org/#active)
+[![codecov](https://codecov.io/gh/slarge/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/slarge/fedregs)
+[![Travis-CI Build
+Status](https://travis-ci.org/slarge/fedregs.svg?branch=master)](https://travis-ci.org/slarge/fedregs)
+[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs)
+![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)
 
-Installation
-------------
+The goal of `fedregs` is to allow for easy exploration and analysis of
+the [Code of Federal
+Regulation](https://www.gpo.gov/fdsys/browse/collectionCfr.action?selectedYearFrom=2017&go=Go).
+
+## Installation
 
 You can install `fedregs` using:
 
 ``` r
 install.packages("fedregs")
-# Or: devtools::install_github("slarge/fedregs")
+# Or: devtools::install_github("NOAA-EDAB/fedregs")
 ```
 
-Example
--------
+## Example
 
-The [Code of Federal Regulation](https://www.gpo.gov/help/index.html#about_code_of_federal_regulations.htm) is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it will return the text for a specified part, including the associated subparts and sections. Behind the scenes, `cfr_text()` and associated helper functions gather the volumes for a given title/year combination and parses XML to determine the chapters, parts, and subparts associated with each volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format. If *ngrams* are your game, set `token = "ngrams"` and specify `n`.
+The [Code of Federal
+Regulation](https://www.gpo.gov/help/index.html#about_code_of_federal_regulations.htm)
+is organized according to a consistent hierarchy: title, chapter, part,
+subpart, section, and subsection. Each title within the CFR is (somewhat
+haphazardly) divided into volumes and over time each chapter isn’t
+consistently in the same volume. The `cfr_text()` function is the main
+function in the package and it will return the text for a specified
+part, including the associated subparts and sections. Behind the scenes,
+`cfr_text()` and associated helper functions gather the volumes for a
+given title/year combination and parses XML to determine the chapters,
+parts, and subparts associated with each volume. Next, the text is
+extracted for each subpart. The `return_tidytext = TRUE` argument will
+return a tibble with the text in a
+[tidytext](https://www.tidytextmining.com/tidytext.html) format. If
+*ngrams* are your game, set `token = "ngrams"` and specify `n`.
 
 ``` r
 library(fedregs)
@@ -40,17 +61,18 @@ regs <- cfr_text(year = 2017,
 head(regs)
 ## # A tibble: 6 x 6
 ## # Groups:   subpart, year, title_number, chapter, part [6]
-##   subpart                      year title_number chapter  part         data
-##   <chr>                       <dbl>        <dbl> <chr>   <dbl> <list<df[,4>
-## 1 Subpart A—General Provisio~  2017           50 VI        648 [84,596 x 4]
-## 2 Subpart B—Management Measu~  2017           50 VI        648 [10,384 x 4]
-## 3 Subpart C—Management Measu~  2017           50 VI        648    [696 x 4]
-## 4 Subpart D—Management Measu~  2017           50 VI        648 [25,567 x 4]
-## 5 Subpart E—Management Measu~  2017           50 VI        648  [6,994 x 4]
-## 6 Subpart F—Management Measu~  2017           50 VI        648 [97,477 x 4]
+##   subpart                             year title_number chapter  part data      
+##   <chr>                              <dbl>        <dbl> <chr>   <dbl> <list>    
+## 1 Subpart A—General Provisions        2017           50 VI        648 <tibble [~
+## 2 Subpart B—Management Measures for~  2017           50 VI        648 <tibble [~
+## 3 Subpart C—Management Measures for~  2017           50 VI        648 <tibble [~
+## 4 Subpart D—Management Measures for~  2017           50 VI        648 <tibble [~
+## 5 Subpart E—Management Measures for~  2017           50 VI        648 <tibble [~
+## 6 Subpart F—Management Measures for~  2017           50 VI        648 <tibble [~
 ```
 
-Now, we can unnest the tibble and take a peek at the data to see what data we have to play with.
+Now, we can unnest the tibble and take a peek at the data to see what
+data we have to play with.
 
 ``` r
 regs %>%
@@ -61,19 +83,22 @@ regs %>%
 ## [16] "and"        "butterfish" "fisheries"  "atlantic"   "mackerel"
 ```
 
-Not entirely unexpected, but there are quite a few common words that don't mean anything. These "stop words" typically don't have important significance and and are filtered out from search queries.
+Not entirely unexpected, but there are quite a few common words that
+don’t mean anything. These “stop words” typically don’t have important
+significance and and are filtered out from search queries.
 
 ``` r
 head(stopwords("english"))
 ## [1] "i"      "me"     "my"     "myself" "we"     "our"
 ```
 
-There are some other messes like punctuation, numbers, *i*ths, Roman Numerals, web sites, and random letters (probably from indexed lists) that can be removed with some simple regex-ing. We can also convert the raw words to word stems to further aggregate our data.
+There are some other messes like punctuation, numbers, *i*ths, Roman
+Numerals, web sites, and random letters (probably from indexed lists)
+that can be removed with some simple regex-ing. We can also convert the
+raw words to word stems to further aggregate our data.
 
 ``` r
-stop_words <- data_frame(word = stopwords("english"))
-## Warning: `data_frame()` is deprecated, use `tibble()`.
-## This warning is displayed once per session.
+stop_words <- tibble(word = stopwords("english"))
 
 clean_words <- regs %>%
   unnest(cols = c(data)) %>% 
@@ -87,48 +112,18 @@ clean_words <- regs %>%
                 !grepl("\\bwww*.", word)) %>% # get rid of web addresses
   mutate(word = tokens(word),
                 word = as.character(tokens_wordstem(word)))
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
-
-## Warning in ~is.na(as.numeric(word)): NAs introduced by coercion
 head(clean_words)
 ## # A tibble: 6 x 9
 ## # Groups:   subpart, year, title_number, chapter, part [1]
-##   subpart  year title_number chapter  part SECTION_NAME SECTION_NUMBER
-##   <chr>   <dbl>        <dbl> <chr>   <dbl> <chr>        <chr>         
-## 1 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
-## 2 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
-## 3 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
-## 4 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
-## 5 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
-## 6 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1       
-## # ... with 2 more variables: values <chr>, word <chr>
+##   subpart  year title_number chapter  part SECTION_NAME SECTION_NUMBER values
+##   <chr>   <dbl>        <dbl> <chr>   <dbl> <chr>        <chr>          <chr> 
+## 1 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
+## 2 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
+## 3 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
+## 4 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
+## 5 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
+## 6 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
+## # ... with 1 more variable: word <chr>
 ```
 
 Now we can look at binning and plotting the words
@@ -160,3 +155,17 @@ ggplot(count_words, aes(word, n)) +
 ```
 
 <img src="README_figs/README-plot_words-1.png" width="672" />
+
+**This repository is a scientific product and is not official
+communication of the National Oceanic and Atmospheric Administration, or
+the United States Department of Commerce. All NOAA GitHub project code
+is provided on an ‘as is’ basis and the user assumes responsibility for
+its use. Any claims against the Department of Commerce or Department of
+Commerce bureaus stemming from the use of this GitHub project will be
+governed by all applicable Federal law. Any reference to specific
+commercial products, processes, or services by service mark, trademark,
+manufacturer, or otherwise, does not constitute or imply their
+endorsement, recommendation or favoring by the Department of Commerce.
+The Department of Commerce seal and logo, or the seal and logo of a DOC
+bureau, shall not be used in any manner to imply endorsement of any
+commercial product or activity by DOC or the United States Government.**
