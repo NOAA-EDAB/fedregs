@@ -117,10 +117,7 @@ numextract <- function(string, return = c("min", "max")[1]){
 cfr_text <- function(year, title_number, chapter, part, token = "words", return_tidytext = TRUE,
                      verbose = FALSE, ...) {
 
-  if(!year %in% seq(1996, 2018)){
-    stop("Year must be between 1996 and 2018.\n")
-  }
-
+  ## Title error
   if(!title_number %in% seq(1, 50)){
     stop("Title must be a numeric value between 1 and 50.\n")
   }
@@ -141,123 +138,247 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
   }
 
 
-  url_head <- "https://www.govinfo.gov/bulkdata/CFR"
-  url_zip <- sprintf("%s/%s/title-%s/CFR-%s-title-%s.zip", url_head, year, title_number, year, title_number)
+  cfr_year <- dplyr::case_when(title_number %in% seq(1, 16) ~ paste0(year, "-01-01"),
+                               title_number %in% seq(17, 27) ~ paste0(year, "-04-01"),
+                               title_number %in% seq(28, 41) ~ paste0(year, "-07-01"),
+                               title_number %in% seq(42, 50) ~ paste0(year, "-10-01"),
+                               TRUE ~ NA_character_)
 
-  if(httr::http_error(url_zip)){
-    stop(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
+  ## eCFR xml wrangling will get the most up to date records
+  if(format(Sys.Date(), "%Y-%m-%d") < cfr_year) {
+    message("The next full release of the full CFR is ", cfr_year, ". The eCFR will be queried instead.\nMore info here:")
+
+    # eCFR xml bulk download
+    url_head <- "https://www.govinfo.gov/bulkdata/ECFR/"
+    url_zip <- sprintf("%s/title-%s/ECFR-title%s.xml", url_head, title_number, title_number)
+
+    if(httr::http_error(url_zip)){
+      stop(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
+    }
+
+    temp_dir <- tempdir()
+    temp <- tempfile(tmpdir = temp_dir, fileext = ".xml")
+    download.file(url_zip, temp, quiet = !verbose)
+    paths <- grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE)
+
+    res <- xml2::read_xml(paths, as = "parsed", encoding = "UTF-8")
+
+    ## Get chapters
+    chapters <- res %>%
+      xml2::xml_find_all(sprintf(".//DIV3/HEAD[contains(text(), 'CHAPTER %s')]/following-sibling::DIV5",
+                                 chapter))
+
+    ## Now figure out the range of parts
+    part_names <- data.frame(parts = paste0("Part ", xml2::xml_attr(x = chapters,  "N")), stringsAsFactors = FALSE) %>%
+      dplyr::mutate(min_parts = unlist(purrr::map(parts, numextract, return = "min")),
+                    max_parts = unlist(purrr::map(parts, numextract, return = "max")),
+                    max_parts = ifelse(is.infinite(max_parts),
+                                       min_parts,
+                                       max_parts)) %>%
+      dplyr::mutate(all_parts = purrr::map2(min_parts, max_parts, seq, by = 1),
+                    parts = gsub("Part ", "", parts)) %>%
+      tidyr::unnest(cols = all_parts)  %>%
+      dplyr::filter(all_parts %in% part) %>%
+      pull(parts)
+
+    cfr_subpart <- chapters[grepl(part_names, xml2::xml_attr(chapters, "N"))]
+
+    ## Subpart names
+    subpart_names <- cfr_subpart %>%
+      xml2::xml_find_all(".//DIV6/HEAD") %>%
+      xml2::xml_text() %>%
+      unlist()
+
+    ## Make sure there aren't any empty names/duplicates
+    subpart_names <- subpart_names[subpart_names != ""]
+
+    section_text <- tidyr::tibble(year = year,
+                                  title_number = title_number,
+                                  chapter = chapter,
+                                  part = part,
+                                  subpart = subpart_names) %>%
+      # dplyr::filter(!subpart == " ") %>%
+      dplyr::mutate(SECTION_NAME = purrr::map(subpart_names,
+                                              function(x) xml2::xml_find_all(x = cfr_subpart,
+                                                                             sprintf(".//DIV6/HEAD[contains(text(), '%s')]/following-sibling::DIV8/HEAD",
+                                                                                     x)) %>%
+                                                xml2::xml_text())) %>%
+      tidyr::unnest(cols = c("SECTION_NAME")) %>%
+      dplyr::mutate(SECTION_TEXT = purrr::map(SECTION_NAME,
+                                              function(x) xml2::xml_find_all(x = cfr_subpart,
+                                                                             sprintf(".//DIV8/HEAD[contains(text(), '%s')]/following-sibling::P",
+                                                                                     x)) %>%
+                                                xml2::xml_text())) %>%
+      tidyr::unnest(cols = c("SECTION_TEXT"))
+
   }
-
-  temp_dir <- tempdir()
-  temp <- tempfile(tmpdir = temp_dir)
-  download.file(url_zip, temp, quiet = !verbose)
-
-  ## Now check the file to find the right volume
-  unzip(temp, exdir = temp_dir)
-  paths <- grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE)
-  paths <- grep(sprintf("*CFR-%s-title%s", year, title_number), paths, value = TRUE)
-
-  cfr_part_df <- purrr::map_df(paths, cfr_part, verbose = verbose)
-
-  cfr_select_part <- cfr_part_df %>%
-    dplyr::mutate(min_parts = purrr::map(parts, numextract, "min"),
-                  max_parts = purrr::map(parts, numextract, "max")) %>%
-    dplyr::filter(grepl(sprintf("Chapter %s", chapter), chapters),
-                  min_parts <= part,
-                  max_parts >= part) %>%
-    tidyr::unnest(cols = c("min_parts", "max_parts"))
-
-
-  if(nrow(cfr_select_part) == 0){
-    stop(sprintf("Part not found. Please check that part %s is available on 'https://www.govinfo.gov/bulkdata/CFR'.\n", part))
-  }
-
-  max_parts_vector <- unlist(cfr_select_part$max_parts)
-
-  if(nrow(cfr_select_part) > 1 &
-    any(!is.infinite(max_parts_vector))) {
-    cfr_select_part <- cfr_select_part %>%
-      dplyr::filter(!is.infinite(max_parts))
-  }
-
-  if(nrow(cfr_select_part) > 1 &
-     any(is.infinite(max_parts_vector))) {
-    cfr_select_part <- cfr_select_part %>%
-      dplyr::filter(min_parts == max(min_parts))
-  }
-
-
-  cfr_xml <- cfr_select_part %>%
-    dplyr::select(c(file_path)) %>%
-    dplyr::pull() %>%
-    xml2::read_xml(as = "text", encoding = "UTF-8")
-
-  subpart_names <- cfr_xml %>%
-    xml2::xml_find_all(sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD",
-                               part)) %>%
-    xml2::xml_text(.) %>%
-    unlist()
-
-  section_all <- dplyr::tibble(subpart_names) %>%
-    dplyr::mutate(values = purrr::map(subpart_names, function(x) xml2::xml_find_all(x = cfr_xml,
-                                                              sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD[contains(text(), '%s')]/following-sibling::SECTNO",
-                                                                      part,
-                                                                      x)) %>%
-                                 xml2::xml_text(.))) %>%
-    tidyr::unnest(cols = c("values"))
-
-  cfr_subpart <- cfr_xml %>%
-    xml2::xml_find_all(sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::SUBPART", part))
-
-  section_names <- cfr_subpart %>%
-    xml2::xml_find_all(".//SECTION/SUBJECT|.//SECTION/RESERVED") %>%
-    xml2::xml_text() %>%
-    unlist()
-  section_names <- section_names[!section_names == ""]
-
-  section_numbers <-  cfr_subpart %>%
-    xml2::xml_find_all(".//SECTION/SECTNO") %>%
-    xml2::xml_text() %>%
-    unlist()
-
-  # section_numbers <- cfr_subpart %>%
-  #   purrr::map(~ xml2::xml_find_all(., "//SECTION/SECTNO")) %>%
-  #   purrr::map(~ xml2::xml_text(.)) %>%
-  #   unlist()
   #
-  # section_names <- cfr_subpart %>%
-  #   purrr::map(~ xml2::xml_find_all(., "//SECTION/SUBJECT|//SECTION/RESERVED")) %>%
-  #   purrr::map(~ xml2::xml_text(.)) %>%
+  #
+  #
+  #
+  #   cfr_subpart <- parts %>%
+  #     xml2::xml_find_all(".//DIV6")
+
+  # chapter_name <- xml2::xml_find_first(chapters, ".//HEAD") %>%
+  #   xml2::xml_text()
+  #
+  # section_all <- data.frame(SUBPART_NAMES = subpart_names) %>%
+  #   dplyr::mutate(SECTION_NAME = purrr::map(subpart_names,
+  #                                     function(x) xml2::xml_find_all(x = parts,
+  #                                                                    sprintf(".//DIV6/HEAD[contains(text(), '%s')]/following-sibling::DIV8/HEAD",
+  #                                                                            x)) %>%
+  #                                       xml2::xml_text())) %>%
+  #   tidyr::unnest(cols = c("SECTION_NAME"))
+
+  # cfr_section <-  cfr_subpart %>%
+  #   xml2::xml_find_all(".//DIV8")
+  #
+  # section_names <-  cfr_section %>%
+  #   xml2::xml_find_all("HEAD") %>%
+  #   xml2::xml_text() %>%
   #   unlist()
 
-  section_text <- dplyr::tibble(SECTION_NAME = section_names,
-                                SECTION_NUMBER = section_numbers,
-                                values = gsub(".*\u00A7|.*\u2009|.*\\s", "", section_numbers)) %>%
-    dplyr::filter(grepl(sprintf("%s[\\.]", part), SECTION_NUMBER)) %>%
-    dplyr::left_join(section_all, by = "values") %>%
-    dplyr::mutate(TEXT = purrr::map(SECTION_NUMBER, function(x) xml2::xml_find_all(cfr_subpart,
-                                                                            sprintf(".//SECTNO[text()='%s']/following-sibling::P",
-                                                                                    x)) %>%
-                               xml2::xml_text(., trim = TRUE)),
-           year = year,
-           title_number = title_number,
-           chapter = chapter,
-           part = part,
-           TEXT = tolower(TEXT)) %>%
-    dplyr::rename(subpart = subpart_names)
+
+  # section_text <- section_all %>%
+  #   dplyr::mutate(SECTION_TEXT = purrr::map(SECTION_NAME,
+  #                                     function(x) xml2::xml_find_all(x = cfr_subpart,
+  #                                                                    sprintf(".//DIV8/HEAD[contains(text(), '%s')]/following-sibling::P",
+  #                                                                            x)) %>%
+  #                                       xml2::xml_text())) %>%
+  #   tidyr::unnest(cols = c("SECTION_TEXT"))
+  #
+  #   # part_names <- res %>%
+  #   #   xml2::xml_find_all(sprintf(".//DIV"))
+  #
+  # section_numbers <- xml2::xml_attr(cfr_section, "N")
+  #
+
+  #
+  #   if(!year %in% seq(1996, max_year)){
+  #     stop("Year must be between 1996 and 2018.\n")
+  #   }
+
+  ## if CFR release year
+  if(format(Sys.Date(), "%Y-%m-%d") >= cfr_year) {
 
 
-    if(return_tidytext){
+    url_head <- "https://www.govinfo.gov/bulkdata/CFR"
+    url_zip <- sprintf("%s/%s/title-%s/CFR-%s-title-%s.zip", url_head, year, title_number, year, title_number)
+
+    if(httr::http_error(url_zip)){
+      stop(sprintf("There aren't any regulations for title %s in %s.\n", title_number, year))
+    }
+
+    temp_dir <- tempdir()
+    temp <- tempfile(tmpdir = temp_dir)
+    download.file(url_zip, temp, quiet = !verbose)
+
+    ## Now check the file to find the right volume
+    unzip(temp, exdir = temp_dir)
+    paths <- grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE)
+    paths <- grep(sprintf("*CFR-%s-title%s", year, title_number), paths, value = TRUE)
+
+    cfr_part_df <- purrr::map_df(paths, cfr_part, verbose = verbose)
+
+    cfr_select_part <- cfr_part_df %>%
+      dplyr::mutate(min_parts = purrr::map(parts, numextract, "min"),
+                    max_parts = purrr::map(parts, numextract, "max")) %>%
+      dplyr::filter(grepl(sprintf("Chapter %s", chapter), chapters),
+                    min_parts <= part,
+                    max_parts >= part) %>%
+      tidyr::unnest(cols = c("min_parts", "max_parts"))
+
+
+    if(nrow(cfr_select_part) == 0){
+      stop(sprintf("Part not found. Please check that part %s is available on 'https://www.govinfo.gov/bulkdata/CFR'.\n", part))
+    }
+
+    max_parts_vector <- unlist(cfr_select_part$max_parts)
+
+    if(nrow(cfr_select_part) > 1 &
+       any(!is.infinite(max_parts_vector))) {
+      cfr_select_part <- cfr_select_part %>%
+        dplyr::filter(!is.infinite(max_parts))
+    }
+
+    if(nrow(cfr_select_part) > 1 &
+       any(is.infinite(max_parts_vector))) {
+      cfr_select_part <- cfr_select_part %>%
+        dplyr::filter(min_parts == max(min_parts))
+    }
+
+
+    cfr_xml <- cfr_select_part %>%
+      dplyr::select(c(file_path)) %>%
+      dplyr::pull() %>%
+      xml2::read_xml(as = "text", encoding = "UTF-8")
+
+    subpart_names <- cfr_xml %>%
+      xml2::xml_find_all(sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD",
+                                 part)) %>%
+      xml2::xml_text(.) %>%
+      unlist()
+
+    section_all <- dplyr::tibble(subpart_names) %>%
+      dplyr::mutate(values = purrr::map(subpart_names, function(x) xml2::xml_find_all(x = cfr_xml,
+                                                                                      sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::CONTENTS/SUBPART/HD[contains(text(), '%s')]/following-sibling::SECTNO",
+                                                                                              part,
+                                                                                              x)) %>%
+                                          xml2::xml_text(.))) %>%
+      tidyr::unnest(cols = c("values"))
+
+    cfr_subpart <- cfr_xml %>%
+      xml2::xml_find_all(sprintf(".//PART/HD[contains(text(), '%s')]/following-sibling::SUBPART", part))
+
+    section_names <- cfr_subpart %>%
+      xml2::xml_find_all(".//SECTION/SUBJECT|.//SECTION/RESERVED") %>%
+      xml2::xml_text() %>%
+      unlist()
+    section_names <- section_names[!section_names == ""]
+
+    section_numbers <-  cfr_subpart %>%
+      xml2::xml_find_all(".//SECTION/SECTNO") %>%
+      xml2::xml_text() %>%
+      unlist()
+
+    # section_numbers <- cfr_subpart %>%
+    #   purrr::map(~ xml2::xml_find_all(., "//SECTION/SECTNO")) %>%
+    #   purrr::map(~ xml2::xml_text(.)) %>%
+    #   unlist()
+    #
+    # section_names <- cfr_subpart %>%
+    #   purrr::map(~ xml2::xml_find_all(., "//SECTION/SUBJECT|//SECTION/RESERVED")) %>%
+    #   purrr::map(~ xml2::xml_text(.)) %>%
+    #   unlist()
+
+    section_text <- dplyr::tibble(SECTION_NAME = section_names,
+                                  SECTION_NUMBER = section_numbers,
+                                  values = gsub(".*\u00A7|.*\u2009|.*\\s", "", section_numbers)) %>%
+      dplyr::filter(grepl(sprintf("%s[\\.]", part), SECTION_NUMBER)) %>%
+      dplyr::left_join(section_all, by = "values") %>%
+      dplyr::mutate(TEXT = purrr::map(SECTION_NUMBER, function(x) xml2::xml_find_all(cfr_subpart,
+                                                                                     sprintf(".//SECTNO[text()='%s']/following-sibling::P",
+                                                                                             x)) %>%
+                                        xml2::xml_text(., trim = TRUE)),
+                    year = year,
+                    title_number = title_number,
+                    chapter = chapter,
+                    part = part,
+                    TEXT = tolower(TEXT)) %>%
+      dplyr::rename(subpart = subpart_names)
+  }
+
+  if(return_tidytext){
     out <- section_text %>%
-             tidytext::unnest_tokens(word, TEXT, token, ...) %>%
-             dplyr::group_by(year, title_number, chapter, part, subpart) %>%
-             tidyr::nest()
+      tidytext::unnest_tokens(word, TEXT, token, ...) %>%
+      dplyr::group_by(year, title_number, chapter, part, subpart) %>%
+      tidyr::nest()
   }
 
   if(!return_tidytext){
     out <- section_text %>%
-             dplyr::group_by(year, title_number, chapter, part, subpart) %>%
-             tidyr::nest()
+      dplyr::group_by(year, title_number, chapter, part, subpart) %>%
+      tidyr::nest()
   }
   return(out)
 }
