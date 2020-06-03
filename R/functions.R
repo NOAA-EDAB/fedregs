@@ -138,7 +138,7 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
   }
 
 
-  cfr_year <- dplyr::case_when(title_number %in% seq(1, 16) ~ paste0(year, "-01-01"),
+  cfr_year <- dplyr::case_when(title_number %in% seq(1, 16)  ~ paste0(year, "-01-01"),
                                title_number %in% seq(17, 27) ~ paste0(year, "-04-01"),
                                title_number %in% seq(28, 41) ~ paste0(year, "-07-01"),
                                title_number %in% seq(42, 50) ~ paste0(year, "-10-01"),
@@ -146,7 +146,13 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
 
   ## eCFR xml wrangling will get the most up to date records
   if(format(Sys.Date(), "%Y-%m-%d") < cfr_year) {
-    message("The next full release of the full CFR is ", cfr_year, ". The eCFR will be queried instead.\nMore info here:")
+
+    if(verbose) {
+      message("The next full release of the full CFR for Title ", title_number, " is ", cfr_year,
+              ". The eCFR will be queried instead.\nThe eCFR is the unofficial editorial compilation ",
+              "of CFR material and Federal Register amendments.\nFind more info here:
+    https://www.ecfr.gov/cgi-bin/ECFR?page=browse")
+    }
 
     # eCFR xml bulk download
     url_head <- "https://www.govinfo.gov/bulkdata/ECFR/"
@@ -159,9 +165,9 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
     temp_dir <- tempdir()
     temp <- tempfile(tmpdir = temp_dir, fileext = ".xml")
     download.file(url_zip, temp, quiet = !verbose)
-    paths <- grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE)
+    # paths <- grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE)
 
-    res <- xml2::read_xml(paths, as = "parsed", encoding = "UTF-8")
+    res <- xml2::read_xml(temp, as = "parsed", encoding = "UTF-8")
 
     ## Get chapters
     chapters <- res %>%
@@ -179,7 +185,7 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
                     parts = gsub("Part ", "", parts)) %>%
       tidyr::unnest(cols = all_parts)  %>%
       dplyr::filter(all_parts %in% part) %>%
-      pull(parts)
+      dplyr::pull(parts)
 
     cfr_subpart <- chapters[grepl(part_names, xml2::xml_attr(chapters, "N"))]
 
@@ -190,28 +196,54 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
       unlist()
 
     ## Make sure there aren't any empty names/duplicates
-    subpart_names <- subpart_names[subpart_names != ""]
+
+    subpart_names <- subpart_names[grepl("^subpart [a-z] .*", tolower(subpart_names))]
+
+
+    xml2::xml_find_all(x = cfr_subpart,
+                       sprintf(".//DIV6/HEAD[contains(text(), '%s')]/following-sibling::DIV8",
+                               subpart_names[1])) %>%
+    xml2::xml_attr("N")
+
 
     section_text <- tidyr::tibble(year = year,
                                   title_number = title_number,
                                   chapter = chapter,
                                   part = part,
                                   subpart = subpart_names) %>%
-      # dplyr::filter(!subpart == " ") %>%
       dplyr::mutate(SECTION_NAME = purrr::map(subpart_names,
                                               function(x) xml2::xml_find_all(x = cfr_subpart,
                                                                              sprintf(".//DIV6/HEAD[contains(text(), '%s')]/following-sibling::DIV8/HEAD",
                                                                                      x)) %>%
-                                                xml2::xml_text())) %>%
+                                                xml2::xml_text())#,
+                    # SECTION_NUMBER = purrr::map(subpart_names,
+                    #                             function(x) xml2::xml_find_all(x = cfr_subpart,
+                    #                                                            sprintf(".//DIV6/HEAD[contains(text(), '%s')]/following-sibling::DIV8",
+                    #                                                                    x)) %>%
+                    #                             xml2::xml_attr("N"))
+                    ) %>%
       tidyr::unnest(cols = c("SECTION_NAME")) %>%
-      dplyr::mutate(SECTION_TEXT = purrr::map(SECTION_NAME,
-                                              function(x) xml2::xml_find_all(x = cfr_subpart,
-                                                                             sprintf(".//DIV8/HEAD[contains(text(), '%s')]/following-sibling::P",
-                                                                                     x)) %>%
-                                                xml2::xml_text())) %>%
-      tidyr::unnest(cols = c("SECTION_TEXT"))
-
-  }
+      dplyr::mutate(SECTION_NUMBER = gsub("(\\d)[^0-9]+$", "\\1", SECTION_NAME), # Collect the digits from the Section Name
+                    SECTION_NAME = gsub("^\\S*\\s+\\S+(.*)", "\\1", SECTION_NAME), # Collect the characters from the Section Name
+                    SECTION_NAME = gsub("^\\s+|\\s+$", "", SECTION_NAME)) %>%  # Clean up whitespace
+      dplyr::filter(SECTION_NAME != "") %>%  # Filter out sections without names
+      dplyr::mutate(TEXT = purrr::map(SECTION_NAME,
+                        function(x) xml2::xml_find_all(x = cfr_subpart,
+                                                       sprintf(".//DIV8/HEAD[contains(text(), '%s')]/following-sibling::P",
+                                                               x)) %>%
+                          xml2::xml_text(., trim = TRUE)),
+                    values = gsub(".*\u00A7|.*\u2009|.*\\s", "", SECTION_NUMBER)) %>%
+      tidyr::unnest(cols = c("TEXT")) %>%
+      dplyr::select(SECTION_NAME,
+                    SECTION_NUMBER,
+                    values,
+                    subpart,
+                    TEXT,
+                    year,
+                    title_number,
+                    chapter,
+                    part)
+    }
   #
   #
   #
@@ -258,9 +290,8 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
   #     stop("Year must be between 1996 and 2018.\n")
   #   }
 
-  ## if CFR release year
+  ## if CFR release date is after current date, then go with the CFR version
   if(format(Sys.Date(), "%Y-%m-%d") >= cfr_year) {
-
 
     url_head <- "https://www.govinfo.gov/bulkdata/CFR"
     url_zip <- sprintf("%s/%s/title-%s/CFR-%s-title-%s.zip", url_head, year, title_number, year, title_number)
