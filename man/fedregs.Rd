@@ -3,7 +3,6 @@
 \docType{package}
 \name{fedregs}
 \alias{fedregs}
-\alias{fedregs-package}
 \title{\code{fedregs} package}
 \description{
 Text Analysis of the US Code of Federal Regulations

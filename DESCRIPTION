@@ -15,7 +15,7 @@ Description: The Code of Federal Regulations (CFR) annual edition is the codific
     of the official versions of the Code of Federal Regulations and related Federal Register
     publications."
 License: GPL-3
-BugReports: https://github.com/slarge/fedregs/issues
+BugReports: https://github.com/NOAA-EDAB/fedregs/issues
 Encoding: UTF-8
 LazyData: true
 Depends: R (>= 3.1.0),
@@ -31,4 +31,4 @@ Imports: dplyr (>= 0.7.4),
 Suggests: 
     ggplot2 (>= 2.2.1),
     testthat (>= 2.0.0)
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0
