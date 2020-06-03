@@ -170,7 +170,6 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
     temp_dir <- tempdir()
     temp <- tempfile(tmpdir = temp_dir, fileext = ".xml")
     download.file(url_zip, temp, quiet = !verbose)
-    # paths <- grep("*.xml$", list.files(temp_dir, full.names = TRUE), value = TRUE)
 
     res <- xml2::read_xml(temp, as = "parsed", encoding = "UTF-8")
 
@@ -201,7 +200,6 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
       unlist()
 
     ## Make sure there aren't any empty names/duplicates
-
     subpart_names <- subpart_names[grepl("^subpart [a-z] .*", tolower(subpart_names))]
 
 
@@ -220,13 +218,7 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
                                               function(x) xml2::xml_find_all(x = cfr_subpart,
                                                                              sprintf(".//DIV6/HEAD[contains(text(), '%s')]/following-sibling::DIV8/HEAD",
                                                                                      x)) %>%
-                                                xml2::xml_text())#,
-                    # SECTION_NUMBER = purrr::map(subpart_names,
-                    #                             function(x) xml2::xml_find_all(x = cfr_subpart,
-                    #                                                            sprintf(".//DIV6/HEAD[contains(text(), '%s')]/following-sibling::DIV8",
-                    #                                                                    x)) %>%
-                    #                             xml2::xml_attr("N"))
-                    ) %>%
+                                                xml2::xml_text())) %>%
       tidyr::unnest(cols = c("SECTION_NAME")) %>%
       dplyr::mutate(SECTION_NUMBER = gsub("(\\d)[^0-9]+$", "\\1", SECTION_NAME), # Collect the digits from the Section Name
                     SECTION_NAME = gsub("^\\S*\\s+\\S+(.*)", "\\1", SECTION_NAME), # Collect the characters from the Section Name
@@ -249,51 +241,6 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
                     chapter,
                     part)
     }
-  #
-  #
-  #
-  #
-  #   cfr_subpart <- parts %>%
-  #     xml2::xml_find_all(".//DIV6")
-
-  # chapter_name <- xml2::xml_find_first(chapters, ".//HEAD") %>%
-  #   xml2::xml_text()
-  #
-  # section_all <- data.frame(SUBPART_NAMES = subpart_names) %>%
-  #   dplyr::mutate(SECTION_NAME = purrr::map(subpart_names,
-  #                                     function(x) xml2::xml_find_all(x = parts,
-  #                                                                    sprintf(".//DIV6/HEAD[contains(text(), '%s')]/following-sibling::DIV8/HEAD",
-  #                                                                            x)) %>%
-  #                                       xml2::xml_text())) %>%
-  #   tidyr::unnest(cols = c("SECTION_NAME"))
-
-  # cfr_section <-  cfr_subpart %>%
-  #   xml2::xml_find_all(".//DIV8")
-  #
-  # section_names <-  cfr_section %>%
-  #   xml2::xml_find_all("HEAD") %>%
-  #   xml2::xml_text() %>%
-  #   unlist()
-
-
-  # section_text <- section_all %>%
-  #   dplyr::mutate(SECTION_TEXT = purrr::map(SECTION_NAME,
-  #                                     function(x) xml2::xml_find_all(x = cfr_subpart,
-  #                                                                    sprintf(".//DIV8/HEAD[contains(text(), '%s')]/following-sibling::P",
-  #                                                                            x)) %>%
-  #                                       xml2::xml_text())) %>%
-  #   tidyr::unnest(cols = c("SECTION_TEXT"))
-  #
-  #   # part_names <- res %>%
-  #   #   xml2::xml_find_all(sprintf(".//DIV"))
-  #
-  # section_numbers <- xml2::xml_attr(cfr_section, "N")
-  #
-
-  #
-  #   if(!year %in% seq(1996, max_year)){
-  #     stop("Year must be between 1996 and 2018.\n")
-  #   }
 
   ## if CFR release date is after current date, then go with the CFR version
   if(format(Sys.Date(), "%Y-%m-%d") >= cfr_year) {
@@ -376,16 +323,6 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
       xml2::xml_find_all(".//SECTION/SECTNO") %>%
       xml2::xml_text() %>%
       unlist()
-
-    # section_numbers <- cfr_subpart %>%
-    #   purrr::map(~ xml2::xml_find_all(., "//SECTION/SECTNO")) %>%
-    #   purrr::map(~ xml2::xml_text(.)) %>%
-    #   unlist()
-    #
-    # section_names <- cfr_subpart %>%
-    #   purrr::map(~ xml2::xml_find_all(., "//SECTION/SUBJECT|//SECTION/RESERVED")) %>%
-    #   purrr::map(~ xml2::xml_text(.)) %>%
-    #   unlist()
 
     section_text <- dplyr::tibble(SECTION_NAME = section_names,
                                   SECTION_NUMBER = section_numbers,
