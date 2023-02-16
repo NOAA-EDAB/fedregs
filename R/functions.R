@@ -117,8 +117,8 @@ numextract <- function(string, return = c("min", "max")[1]){
 cfr_text <- function(year, title_number, chapter, part, token = "words", return_tidytext = TRUE,
                      verbose = FALSE, ...) {
 
-  if(!year %in% seq(1996, 2018)){
-    stop("Year must be between 1996 and 2018.\n")
+  if(!year %in% seq(1996, 2021)){
+    stop("Year must be between 1996 and 2021.\n")
   }
 
   if(!title_number %in% seq(1, 50)){

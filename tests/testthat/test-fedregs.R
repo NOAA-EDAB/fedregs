@@ -115,7 +115,7 @@ test_that("We can go all the way", {
                                   good_title_number,
                                   good_chapter,
                                   good_part),
-                         "Year must be between 1996 and 2018.\n")
+                         "Year must be between 1996 and 2021.\n")
 
   testthat::expect_error(cfr_text(good_year,
                                   bad_title_number,
