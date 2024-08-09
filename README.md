@@ -9,7 +9,7 @@ developed.](http://www.repostatus.org/badges/0.1.0/active.svg)](http://www.repos
 [![codecov](https://codecov.io/gh/NOAA-EDAB/fedregs/branch/master/graph/badge.svg)](https://codecov.io/gh/NOAA-EDAB/fedregs)
 [![Travis-CI Build
 Status](https://travis-ci.org/NOAA-EDAB/fedregs.svg?branch=master)](https://travis-ci.org/NOAA-EDAB/fedregs)
-[![CRAN\_Status\_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs)
+[![CRAN_Status_Badge](http://www.r-pkg.org/badges/version/fedregs)](https://cran.r-project.org/package=fedregs)
 ![downloads](http://cranlogs.r-pkg.org/badges/grand-total/fedregs)
 
 The goal of `fedregs` is to allow for easy exploration and analysis of
@@ -50,7 +50,7 @@ library(tidyr)
 library(ggplot2)
 library(quanteda)
 
-regs <- cfr_text(year = 2017,
+regs <- cfr_text(year = 2021,
                  title_number = 50,
                  chapter = 6,
                  part = 648,
@@ -59,16 +59,17 @@ regs <- cfr_text(year = 2017,
                  return_tidytext = TRUE,
                  verbose = FALSE)
 head(regs)
-## # A tibble: 6 x 6
-## # Groups:   subpart, year, title_number, chapter, part [6]
-##   subpart                             year title_number chapter  part data      
-##   <chr>                              <dbl>        <dbl> <chr>   <dbl> <list>    
-## 1 Subpart A—General Provisions        2017           50 VI        648 <tibble [~
-## 2 Subpart B—Management Measures for~  2017           50 VI        648 <tibble [~
-## 3 Subpart C—Management Measures for~  2017           50 VI        648 <tibble [~
-## 4 Subpart D—Management Measures for~  2017           50 VI        648 <tibble [~
-## 5 Subpart E—Management Measures for~  2017           50 VI        648 <tibble [~
-## 6 Subpart F—Management Measures for~  2017           50 VI        648 <tibble [~
+## # A tibble: 6 × 6
+## # Groups:   year, title_number, chapter, part, subpart [6]
+##   subpart                                    year title…¹ chapter  part data    
+##   <chr>                                     <dbl>   <dbl> <chr>   <dbl> <list>  
+## 1 Subpart A—General Provisions               2021      50 VI        648 <tibble>
+## 2 Subpart B—Management Measures for the Ma…  2021      50 VI        648 <tibble>
+## 3 Subpart C—Management Measures for Atlant…  2021      50 VI        648 <tibble>
+## 4 Subpart D—Management Measures for the At…  2021      50 VI        648 <tibble>
+## 5 Subpart E—Management Measures for the At…  2021      50 VI        648 <tibble>
+## 6 Subpart F—Management Measures for the NE…  2021      50 VI        648 <tibble>
+## # … with abbreviated variable name ¹​title_number
 ```
 
 Now, we can unnest the tibble and take a peek at the data to see what
@@ -79,8 +80,8 @@ regs %>%
   unnest(cols = c(data)) %>% head(20) %>% pull(word)
 ##  [1] "c"          "a"          "this"       "part"       "implements"
 ##  [6] "the"        "fishery"    "management" "plans"      "fmps"      
-## [11] "for"        "the"        "atlantic"   "mackerel"   "squid"     
-## [16] "and"        "butterfish" "fisheries"  "atlantic"   "mackerel"
+## [11] "for"        "the"        "atlantic"   "mackerel"   "atlantic"  
+## [16] "chub"       "mackerel"   "longfin"    "squid"      "n"
 ```
 
 Not entirely unexpected, but there are quite a few common words that
@@ -109,21 +110,21 @@ clean_words <- regs %>%
                 !grepl("^m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$",
                       word), # adios Roman Numerals
                 !grepl("\\b[a-z]{1}\\b", word), # get rid of one letter words
-                !grepl("\\bwww*.", word)) %>% # get rid of web addresses
-  mutate(word = tokens(word),
-                word = as.character(tokens_wordstem(word)))
+                !grepl("\\bwww*.", word)) # get rid of web addresses
+
 head(clean_words)
-## # A tibble: 6 x 9
-## # Groups:   subpart, year, title_number, chapter, part [1]
-##   subpart  year title_number chapter  part SECTION_NAME SECTION_NUMBER values
-##   <chr>   <dbl>        <dbl> <chr>   <dbl> <chr>        <chr>          <chr> 
-## 1 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
-## 2 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
-## 3 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
-## 4 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
-## 5 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
-## 6 Subpar~  2017           50 VI        648 Purpose and~ §<U+2009>648.1        648.1 
-## # ... with 1 more variable: word <chr>
+## # A tibble: 6 × 9
+## # Groups:   year, title_number, chapter, part, subpart [1]
+##   subpart                year title…¹ chapter  part SECTI…² SECTI…³ values word 
+##   <chr>                 <dbl>   <dbl> <chr>   <dbl> <chr>   <chr>   <chr>  <chr>
+## 1 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  part 
+## 2 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  impl…
+## 3 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  fish…
+## 4 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  mana…
+## 5 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  plans
+## 6 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  fmps 
+## # … with abbreviated variable names ¹​title_number, ²​SECTION_NAME,
+## #   ³​SECTION_NUMBER
 ```
 
 Now we can look at binning and plotting the words
@@ -146,15 +147,16 @@ ggplot(count_words, aes(word, n)) +
        subtitle = "Title 50, Chapter VI, Part 648",
        caption = sprintf("Data accessed on %s from:\n https://www.gpo.gov/fdsys/browse/collectionCfr.action?collectionCode=CFR", 
                          format(Sys.Date(), "%d %B %Y"))) +
+  theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 8),
         legend.direction = "horizontal",
-        legend.position = "bottom",
-        text = element_text(size = 8)) +
+        legend.position = "bottom") +
   coord_flip() +
-  theme_minimal()
+    NULL
 ```
 
-<img src="README_figs/README-plot_words-1.png" width="672" />
+<img src="README_figs/README-plot_words-1.png" width="960" />
 
 **This repository is a scientific product and is not official
 communication of the National Oceanic and Atmospheric Administration, or

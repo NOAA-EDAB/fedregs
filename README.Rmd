@@ -38,7 +38,7 @@ library(tidyr)
 library(ggplot2)
 library(quanteda)
 
-regs <- cfr_text(year = 2017,
+regs <- cfr_text(year = 2021,
                  title_number = 50,
                  chapter = 6,
                  part = 648,
@@ -75,10 +75,10 @@ clean_words <- regs %>%
                 !grepl("^m{0,4}(cm|cd|d?c{0,3})(xc|xl|l?x{0,3})(ix|iv|v?i{0,3})$",
                       word), # adios Roman Numerals
                 !grepl("\\b[a-z]{1}\\b", word), # get rid of one letter words
-                !grepl("\\bwww*.", word)) %>% # get rid of web addresses
-  mutate(word = tokens(word),
-                word = as.character(tokens_wordstem(word)))
+                !grepl("\\bwww*.", word)) # get rid of web addresses
+
 head(clean_words)
+
 ```
 
 Now we can look at binning and plotting the words
@@ -93,7 +93,7 @@ count_words <- clean_words %>%
 ```
 
 
-```{r plot_words}
+```{r plot_words, fig.width=10, fig.height=8}
 ggplot(count_words, aes(word, n)) +
   geom_col() +
   labs(xlab = NULL, 
@@ -101,12 +101,13 @@ ggplot(count_words, aes(word, n)) +
        subtitle = "Title 50, Chapter VI, Part 648",
        caption = sprintf("Data accessed on %s from:\n https://www.gpo.gov/fdsys/browse/collectionCfr.action?collectionCode=CFR", 
                          format(Sys.Date(), "%d %B %Y"))) +
+  theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 8),
         legend.direction = "horizontal",
-        legend.position = "bottom",
-        text = element_text(size = 8)) +
+        legend.position = "bottom") +
   coord_flip() +
-  theme_minimal()
+    NULL
 ```
 
 
