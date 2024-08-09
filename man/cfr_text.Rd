@@ -4,11 +4,19 @@
 \alias{cfr_text}
 \title{Extract the Text for a Given Year, Title, Chapter, and Part}
 \usage{
-cfr_text(year, title_number, chapter, part, token = "words",
-  return_tidytext = TRUE, verbose = FALSE, ...)
+cfr_text(
+  year,
+  title_number,
+  chapter,
+  part,
+  token = "words",
+  return_tidytext = TRUE,
+  verbose = FALSE,
+  ...
+)
 }
 \arguments{
-\item{year}{numeric between 1996 and 2018.}
+\item{year}{numeric between 1996 and current year-1.}
 
 \item{title_number}{numeric between 1 and 50.}
 

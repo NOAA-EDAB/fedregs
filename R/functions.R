@@ -88,7 +88,7 @@ numextract <- function(string, return = c("min", "max")[1]){
 #' @description \code{cfr_text} returns a tibble of CFR text
 #' @details This function is the main function of the \code{fedregs} package. It takes the title, chapter, part, and year and returns a tibble of raw text (\code{return_tidytext = FALSE}) or \href{https://www.tidytextmining.com/tidytext.html}{tidytext} text (\code{return_tidytext = TRUE}). N.b., it has not been extensively tested on titles and chapters other than Title 50 chapter VI and part 648.
 #'
-#' @param year numeric between 1996 and 2018.
+#' @param year numeric between 1996 and current year-1.
 #' @param title_number numeric between 1 and 50.
 #' @param chapter numeric or roman numeral.
 #' @param part numeric.
@@ -117,8 +117,9 @@ numextract <- function(string, return = c("min", "max")[1]){
 cfr_text <- function(year, title_number, chapter, part, token = "words", return_tidytext = TRUE,
                      verbose = FALSE, ...) {
 
+  max_year <- as.numeric(format(Sys.Date(), "%Y")) - 1
   if(!year %in% seq(1996, 2021)){
-    stop("Year must be between 1996 and 2021.\n")
+    stop(sprintf("Year must be between 1996 and %s.\n", max_year))
   }
 
   if(!title_number %in% seq(1, 50)){

@@ -110,12 +110,13 @@ test_that("We can go all the way", {
   bad_chapter <- "BB"
   good_part <- 648
   bad_part <- "DD"
+  max_year <- as.numeric(format(Sys.Date(), "%Y")) - 1
 
   testthat::expect_error(cfr_text(bad_year,
                                   good_title_number,
                                   good_chapter,
                                   good_part),
-                         "Year must be between 1996 and 2021.\n")
+                         sprintf("Year must be between 1996 and %s.\n", max_year))
 
   testthat::expect_error(cfr_text(good_year,
                                   bad_title_number,

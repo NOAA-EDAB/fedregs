@@ -31,14 +31,14 @@ install.packages("fedregs")
 
 The [Code of Federal Regulation](https://www.gpo.gov/help/index.html#about_code_of_federal_regulations.htm) is organized according to a consistent hierarchy: title, chapter, part, subpart, section, and subsection. Each title within the CFR is (somewhat haphazardly) divided into volumes and over time each chapter isn't consistently in the same volume. The `cfr_text()` function is the main function in the package and it will return the text for a specified part, including the associated subparts and sections. Behind the scenes, `cfr_text()` and associated helper functions gather the volumes for a given title/year combination and parses XML to determine the chapters, parts, and subparts associated with each volume. Next, the text is extracted for each subpart. The `return_tidytext = TRUE` argument will return a tibble with the text in a [tidytext](https://www.tidytextmining.com/tidytext.html) format. If *ngrams* are your game, set `token = "ngrams"` and specify `n`.
 
-```{r get_regs, echo = TRUE, message = FALSE}
+```{r get_regs, echo = TRUE, message = FALSE, warning=FALSE}
 library(fedregs)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(quanteda)
 
-regs <- cfr_text(year = 2021,
+regs <- cfr_text(year = 2023,
                  title_number = 50,
                  chapter = 6,
                  part = 648,
