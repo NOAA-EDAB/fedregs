@@ -50,7 +50,7 @@ library(tidyr)
 library(ggplot2)
 library(quanteda)
 
-regs <- cfr_text(year = 2021,
+regs <- cfr_text(year = 2023,
                  title_number = 50,
                  chapter = 6,
                  part = 648,
@@ -61,15 +61,14 @@ regs <- cfr_text(year = 2021,
 head(regs)
 ## # A tibble: 6 × 6
 ## # Groups:   year, title_number, chapter, part, subpart [6]
-##   subpart                                    year title…¹ chapter  part data    
-##   <chr>                                     <dbl>   <dbl> <chr>   <dbl> <list>  
-## 1 Subpart A—General Provisions               2021      50 VI        648 <tibble>
-## 2 Subpart B—Management Measures for the Ma…  2021      50 VI        648 <tibble>
-## 3 Subpart C—Management Measures for Atlant…  2021      50 VI        648 <tibble>
-## 4 Subpart D—Management Measures for the At…  2021      50 VI        648 <tibble>
-## 5 Subpart E—Management Measures for the At…  2021      50 VI        648 <tibble>
-## 6 Subpart F—Management Measures for the NE…  2021      50 VI        648 <tibble>
-## # … with abbreviated variable name ¹​title_number
+##   subpart                               year title_number chapter  part data    
+##   <chr>                                <dbl>        <dbl> <chr>   <dbl> <list>  
+## 1 Subpart A—General Provisions          2023           50 VI        648 <tibble>
+## 2 Subpart B—Management Measures for t…  2023           50 VI        648 <tibble>
+## 3 Subpart C—Management Measures for A…  2023           50 VI        648 <tibble>
+## 4 Subpart D—Management Measures for t…  2023           50 VI        648 <tibble>
+## 5 Subpart E—Management Measures for t…  2023           50 VI        648 <tibble>
+## 6 Subpart F—Management Measures for t…  2023           50 VI        648 <tibble>
 ```
 
 Now, we can unnest the tibble and take a peek at the data to see what
@@ -115,16 +114,15 @@ clean_words <- regs %>%
 head(clean_words)
 ## # A tibble: 6 × 9
 ## # Groups:   year, title_number, chapter, part, subpart [1]
-##   subpart                year title…¹ chapter  part SECTI…² SECTI…³ values word 
-##   <chr>                 <dbl>   <dbl> <chr>   <dbl> <chr>   <chr>   <chr>  <chr>
-## 1 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  part 
-## 2 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  impl…
-## 3 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  fish…
-## 4 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  mana…
-## 5 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  plans
-## 6 Subpart A—General Pr…  2021      50 VI        648 Purpos… § 648.1 648.1  fmps 
-## # … with abbreviated variable names ¹​title_number, ²​SECTION_NAME,
-## #   ³​SECTION_NUMBER
+##   subpart     year title_number chapter  part SECTION_NAME SECTION_NUMBER values
+##   <chr>      <dbl>        <dbl> <chr>   <dbl> <chr>        <chr>          <chr> 
+## 1 Subpart A…  2023           50 VI        648 Purpose and… § 648.1        648.1 
+## 2 Subpart A…  2023           50 VI        648 Purpose and… § 648.1        648.1 
+## 3 Subpart A…  2023           50 VI        648 Purpose and… § 648.1        648.1 
+## 4 Subpart A…  2023           50 VI        648 Purpose and… § 648.1        648.1 
+## 5 Subpart A…  2023           50 VI        648 Purpose and… § 648.1        648.1 
+## 6 Subpart A…  2023           50 VI        648 Purpose and… § 648.1        648.1 
+## # ℹ 1 more variable: word <chr>
 ```
 
 Now we can look at binning and plotting the words

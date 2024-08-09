@@ -2,8 +2,8 @@
 % Please edit documentation in R/fedregs.r
 \docType{package}
 \name{fedregs}
-\alias{fedregs}
 \alias{fedregs-package}
+\alias{fedregs}
 \title{\code{fedregs} package}
 \description{
 Text Analysis of the US Code of Federal Regulations
@@ -11,4 +11,15 @@ Text Analysis of the US Code of Federal Regulations
 \details{
 See the README on
 \href{https://github.com/slarge/fedregs/blob/master/README.md}{GitHub}
+}
+\seealso{
+Useful links:
+\itemize{
+  \item Report bugs at \url{https://github.com/slarge/fedregs/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Scott Large \email{scott.large@noaa.gov}
+
 }
