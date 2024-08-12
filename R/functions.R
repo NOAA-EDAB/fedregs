@@ -118,7 +118,7 @@ cfr_text <- function(year, title_number, chapter, part, token = "words", return_
                      verbose = FALSE, ...) {
 
   max_year <- as.numeric(format(Sys.Date(), "%Y")) - 1
-  if(!year %in% seq(1996, 2021)){
+  if(!year %in% seq(1996, max_year)){
     stop(sprintf("Year must be between 1996 and %s.\n", max_year))
   }
 
